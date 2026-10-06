@@ -18,24 +18,43 @@ interface GroqAnalysis {
   }>;
 }
 
-const previewTracks = [
+const fallbackTracks = [
   {
-    previewUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-    imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/24/09/79/2409794c-3d5d-af26-580e-7dc00ee4f207/mzaf_369629549966021675.plus.aac.p.m4a',
+    imageUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/cb/7b/a9/cb7ba903-b5f1-cc21-90db-7a81b7aa0997/724596951057.jpg/600x600bb.jpg',
   },
   {
-    previewUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-    imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/11/71/d6/1171d6ad-3c96-e027-2af6-58028426588c/mzaf_15137631797407745471.plus.aac.p.m4a',
+    imageUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/b5/92/bb/b592bb72-52e3-e756-9b26-9f56d08f47ab/16UMGIM67864.rgb.jpg/600x600bb.jpg',
   },
   {
-    previewUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-    imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80',
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/33/bb/1a/33bb1a1a-1448-3118-6891-639e61784145/mzaf_3810752549913623044.plus.aac.p.m4a',
+    imageUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/4f/13/65/4f1365b0-e97c-c469-c438-2f7d8f204355/872133025584_cover.jpg/600x600bb.jpg',
   },
   {
-    previewUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80',
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/e1/71/79/e17179d4-9b2b-d754-8391-3bac6ffc5d01/mzaf_3594546411583999729.plus.aac.p.m4a',
+    imageUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/be/da/ec/bedaec4f-ed05-3fde-f131-e47fba90ca7e/00602567548744.rgb.jpg/600x600bb.jpg',
   },
 ];
+
+async function fetchTrackPreview(title: string, artist: string) {
+  try {
+    const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(`${title} ${artist}`)}&entity=song&limit=1`;
+    const res = await fetch(itunesUrl, { signal: AbortSignal.timeout(3500) });
+    if (res.ok) {
+      const data = await res.json();
+      const first = data.results?.[0];
+      if (first?.previewUrl) {
+        return {
+          previewUrl: first.previewUrl as string,
+          imageUrl: first.artworkUrl100 ? (first.artworkUrl100.replace('100x100bb', '600x600bb') as string) : null,
+          album: (first.collectionName as string) || null,
+        };
+      }
+    }
+  } catch {}
+  return null;
+}
 
 async function callGroqAi(promptText: string): Promise<GroqAnalysis | null> {
   const groqKey = process.env.GROQ_API_KEY;
@@ -149,29 +168,38 @@ export async function POST(request: NextRequest) {
     const cleanTitle = cleanNoEmoji(analysis.title || 'Curated Soundscape');
     const cleanDesc = cleanNoEmoji(analysis.description || 'Personalized acoustic mix.');
 
-    const tracksList = (analysis.suggestedTracks && analysis.suggestedTracks.length > 0
-      ? analysis.suggestedTracks
-      : [
-          { title: 'Subtle Pulse', artist: 'Kiasmos', album: 'Blurred Elements' },
-          { title: 'Solar Echoes', artist: 'Tycho', album: 'Epoch Vision' },
-          { title: 'Midnight Current', artist: 'Bonobo', album: 'Fragments' },
-          { title: 'Aura Cascade', artist: 'Jon Hopkins', album: 'Singularity' },
-        ]
-    ).slice(0, 4).map((t, i) => ({
-      id: `ai-track-${Date.now()}-${i}`,
-      type: 'music' as const,
-      title: cleanNoEmoji(t.title),
-      artist: cleanNoEmoji(t.artist),
-      album: t.album ? cleanNoEmoji(t.album) : 'Studio Session',
-      summary: `${cleanNoEmoji(t.title)} by ${cleanNoEmoji(t.artist)} • Curated for ${cleanMoodTag}`,
-      category: 'entertainment' as const,
-      timestamp: 'AI DJ Master',
-      durationMs: 190000 + i * 22000,
-      imageUrl: previewTracks[i % previewTracks.length].imageUrl,
-      previewUrl: previewTracks[i % previewTracks.length].previewUrl,
-      externalUrl: `https://open.spotify.com/search/${encodeURIComponent(`${t.title} ${t.artist}`)}`,
-      tags: ['AI DJ', cleanMoodTag],
-    }));
+    const rawSuggested = (
+      analysis.suggestedTracks && analysis.suggestedTracks.length > 0
+        ? analysis.suggestedTracks
+        : [
+            { title: 'Midnight City', artist: 'M83', album: 'Hurry Up, We’re Dreaming' },
+            { title: 'Starboy', artist: 'The Weeknd', album: 'Starboy' },
+            { title: 'Resonance', artist: 'HOME', album: 'Odyssey' },
+            { title: 'Breathe', artist: 'Télépopmusik', album: 'Genetic World' },
+          ]
+    ).slice(0, 4);
+
+    const tracksList = await Promise.all(
+      rawSuggested.map(async (t, i) => {
+        const liveMatch = await fetchTrackPreview(t.title, t.artist);
+        const fb = fallbackTracks[i % fallbackTracks.length];
+        return {
+          id: `ai-track-${Date.now()}-${i}`,
+          type: 'music' as const,
+          title: cleanNoEmoji(t.title),
+          artist: cleanNoEmoji(t.artist),
+          album: liveMatch?.album || (t.album ? cleanNoEmoji(t.album) : 'Studio Session'),
+          summary: `${cleanNoEmoji(t.title)} by ${cleanNoEmoji(t.artist)} • Curated for ${cleanMoodTag}`,
+          category: 'entertainment' as const,
+          timestamp: 'AI DJ Master',
+          durationMs: 190000 + i * 22000,
+          imageUrl: liveMatch?.imageUrl || fb.imageUrl,
+          previewUrl: liveMatch?.previewUrl || fb.previewUrl,
+          externalUrl: `https://open.spotify.com/search/${encodeURIComponent(`${t.title} ${t.artist}`)}`,
+          tags: ['AI DJ', cleanMoodTag],
+        };
+      })
+    );
 
     return NextResponse.json({
       success: true,

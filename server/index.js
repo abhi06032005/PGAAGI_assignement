@@ -1180,27 +1180,56 @@ async function searchSpotifyTracks(query, token, limit = 8) {
     });
     if (!res.ok) return [];
     const data = await res.json();
-    return (data.tracks?.items || []).map((t) => ({
-      id: `spotify-${t.id}`,
-      type: 'music',
-      title: t.name,
-      artist: t.artists.map((a) => a.name).join(', '),
-      album: t.album?.name || '',
-      summary: `${t.artists.map((a) => a.name).join(', ')} — ${t.album?.name || ''}`,
-      category: 'entertainment',
-      timestamp: 'AI Mood DJ',
-      publishedAt: t.album?.release_date || new Date().toISOString(),
-      durationMs: t.duration_ms || 180000,
-      imageUrl: t.album?.images?.[0]?.url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600',
-      imageAlt: `${t.name} by ${t.artists[0]?.name}`,
-      previewUrl: t.preview_url || null,
-      externalUrl: t.external_urls?.spotify || `https://open.spotify.com/search/${encodeURIComponent(t.name)}`,
-      source: 'Spotify',
-      sourceName: 'Spotify',
-      tags: ['AI Curated', 'Spotify'],
-      isTrending: (t.popularity || 0) > 60,
-      spotifyUri: t.uri,
-    }));
+    const items = data.tracks?.items || [];
+    return await Promise.all(
+      items.map(async (t) => {
+        let preview = t.preview_url;
+        let artwork = t.album?.images?.[0]?.url;
+
+        // If Spotify has no preview_url (deprecated by Spotify globally), fetch real stream from Apple Music catalog
+        if (!preview) {
+          try {
+            const artistName = t.artists[0]?.name || '';
+            const itunesRes = await fetch(
+              `https://itunes.apple.com/search?term=${encodeURIComponent(`${t.name} ${artistName}`)}&entity=song&limit=1`,
+              { signal: AbortSignal.timeout(3000) }
+            );
+            if (itunesRes.ok) {
+              const itData = await itunesRes.json();
+              const first = itData.results?.[0];
+              if (first?.previewUrl) {
+                preview = first.previewUrl;
+                if (!artwork && first.artworkUrl100) {
+                  artwork = first.artworkUrl100.replace('100x100bb', '600x600bb');
+                }
+              }
+            }
+          } catch {}
+        }
+
+        return {
+          id: `spotify-${t.id}`,
+          type: 'music',
+          title: t.name,
+          artist: t.artists.map((a) => a.name).join(', '),
+          album: t.album?.name || '',
+          summary: `${t.artists.map((a) => a.name).join(', ')} — ${t.album?.name || ''}`,
+          category: 'entertainment',
+          timestamp: 'AI Mood DJ',
+          publishedAt: t.album?.release_date || new Date().toISOString(),
+          durationMs: t.duration_ms || 180000,
+          imageUrl: artwork || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600',
+          imageAlt: `${t.name} by ${t.artists[0]?.name}`,
+          previewUrl: preview || null,
+          externalUrl: t.external_urls?.spotify || `https://open.spotify.com/search/${encodeURIComponent(t.name)}`,
+          source: 'Spotify',
+          sourceName: 'Spotify',
+          tags: ['AI Curated', 'Spotify'],
+          isTrending: (t.popularity || 0) > 60,
+          spotifyUri: t.uri,
+        };
+      })
+    );
   } catch {
     return [];
   }

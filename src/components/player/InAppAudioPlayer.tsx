@@ -24,24 +24,21 @@ import {
 } from "lucide-react";
 import { SafeImage } from "@/components/ui/SafeImage";
 
-// Curated royalty-free high-fidelity audio streams for seamless in-app preview
-const FALLBACK_AUDIO_STREAMS = [
-  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
-  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
-  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
-  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
+// Authentic high-fidelity audio streams for fallback (M83, The Weeknd, HOME, Telepopmusik, Bonobo, Tycho)
+const AUTHENTIC_AUDIO_STREAMS = [
+  "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/24/09/79/2409794c-3d5d-af26-580e-7dc00ee4f207/mzaf_369629549966021675.plus.aac.p.m4a", // M83 Midnight City
+  "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/11/71/d6/1171d6ad-3c96-e027-2af6-58028426588c/mzaf_15137631797407745471.plus.aac.p.m4a", // The Weeknd Starboy
+  "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/33/bb/1a/33bb1a1a-1448-3118-6891-639e61784145/mzaf_3810752549913623044.plus.aac.p.m4a", // HOME Resonance
+  "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/e1/71/79/e17179d4-9b2b-d754-8391-3bac6ffc5d01/mzaf_3594546411583999729.plus.aac.p.m4a", // Telepopmusik Breathe
+  "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/7b/50/f2/7b50f2d2-4ead-9f1c-986f-a780d26a9d12/mzaf_3026587138333977214.plus.aac.p.m4a", // Bonobo Kerala
+  "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/13/7c/57/137c5718-36e5-25d7-28cb-0176f3940f6d/mzaf_11229413559193556845.plus.aac.p.m4a", // Tycho Coastal Brake
 ];
 
-const getAudioSource = (track: { id: string; previewUrl?: string | null }) => {
-  if (track.previewUrl) return track.previewUrl;
-  const hash = track.id
+const getFallbackAudio = (trackId: string) => {
+  const hash = trackId
     .split("")
     .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return FALLBACK_AUDIO_STREAMS[hash % FALLBACK_AUDIO_STREAMS.length];
+  return AUTHENTIC_AUDIO_STREAMS[hash % AUTHENTIC_AUDIO_STREAMS.length];
 };
 
 export const InAppAudioPlayer: React.FC = () => {
@@ -53,14 +50,55 @@ export const InAppAudioPlayer: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(30);
   const [isMuted, setIsMuted] = useState(false);
+  const [activeAudioSrc, setActiveAudioSrc] = useState<string | null>(null);
+
+  // Dynamically resolve authentic song audio for currentTrack if previewUrl is missing or SoundHelix
+  useEffect(() => {
+    if (!currentTrack) {
+      setActiveAudioSrc(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    // If already has a genuine non-SoundHelix previewUrl, use it directly
+    if (currentTrack.previewUrl && !currentTrack.previewUrl.includes("soundhelix")) {
+      setActiveAudioSrc(currentTrack.previewUrl);
+      return;
+    }
+
+    // Query Apple Music catalog for this specific song's authentic 30s studio clip
+    const query = `${currentTrack.title} ${currentTrack.artist || ""}`.trim();
+    const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=1`;
+
+    fetch(itunesUrl)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isMounted) return;
+        const liveMatch = data?.results?.[0]?.previewUrl;
+        if (liveMatch) {
+          setActiveAudioSrc(liveMatch);
+        } else {
+          setActiveAudioSrc(getFallbackAudio(currentTrack.id));
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setActiveAudioSrc(getFallbackAudio(currentTrack.id));
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentTrack?.id, currentTrack?.title, currentTrack?.artist, currentTrack?.previewUrl]);
 
   // Sync playback state and audio source with <audio> element
   useEffect(() => {
-    if (!audioRef.current || !currentTrack) return;
+    if (!audioRef.current || !activeAudioSrc) return;
 
-    const targetSrc = getAudioSource(currentTrack);
-    if (audioRef.current.src !== targetSrc) {
-      audioRef.current.src = targetSrc;
+    if (audioRef.current.src !== activeAudioSrc) {
+      audioRef.current.src = activeAudioSrc;
       audioRef.current.load();
     }
 
@@ -69,7 +107,7 @@ export const InAppAudioPlayer: React.FC = () => {
     } else {
       audioRef.current.pause();
     }
-  }, [isPlaying, currentTrack]);
+  }, [isPlaying, activeAudioSrc]);
 
   // Sync volume
   useEffect(() => {
@@ -80,7 +118,7 @@ export const InAppAudioPlayer: React.FC = () => {
 
   if (!currentTrack) return null;
 
-  const audioSource = getAudioSource(currentTrack);
+  const audioSource = activeAudioSrc || getFallbackAudio(currentTrack.id);
   const nextTrackItem =
     currentPlaylist.length > 1
       ? currentPlaylist[(playlistIndex + 1) % currentPlaylist.length]
@@ -126,8 +164,8 @@ export const InAppAudioPlayer: React.FC = () => {
           // If stream fails, switch to next fallback song automatically
           if (audioRef.current) {
             const altSource =
-              FALLBACK_AUDIO_STREAMS[
-                (playlistIndex + 1) % FALLBACK_AUDIO_STREAMS.length
+              AUTHENTIC_AUDIO_STREAMS[
+                (playlistIndex + 1) % AUTHENTIC_AUDIO_STREAMS.length
               ];
             if (audioRef.current.src !== altSource) {
               audioRef.current.src = altSource;
