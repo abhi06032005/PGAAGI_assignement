@@ -213,7 +213,7 @@ export const AiMoodDjModal: React.FC = () => {
                       type="text"
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
-                      placeholder="Describe your mood, vibe, or current activity..."
+                      placeholder="e.g. South Indian bhajans, Hindi romantic, late-night lo-fi..."
                       className="w-full px-4 py-3 rounded-2xl bg-stone-100 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700/80 text-sm text-stone-900 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 dark:focus:ring-stone-600 transition-all"
                     />
                   </div>
@@ -227,18 +227,29 @@ export const AiMoodDjModal: React.FC = () => {
                   </button>
                 </form>
 
-                {/* 1 Example Condition */}
+                {/* Example Condition */}
                 <div className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400 pt-1">
                   <span className="font-medium text-stone-400 dark:text-stone-500">Example:</span>
                   <button
                     type="button"
                     onClick={() => {
-                      setPrompt(examplePrompt);
-                      handleGenerate(examplePrompt);
+                      setPrompt("South Indian devotional bhajans");
+                      handleGenerate("South Indian devotional bhajans");
                     }}
-                    className="text-stone-700 dark:text-stone-300 hover:underline hover:text-stone-900 dark:hover:text-white cursor-pointer transition-colors"
+                    className="text-stone-700 dark:text-stone-300 hover:underline hover:text-stone-900 dark:hover:text-white cursor-pointer transition-colors font-medium"
                   >
-                    &ldquo;{examplePrompt}&rdquo;
+                    &ldquo;South Indian devotional bhajans&rdquo;
+                  </button>
+                  <span className="text-stone-300 dark:text-stone-700">•</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPrompt("Soulful Hindi acoustic love songs");
+                      handleGenerate("Soulful Hindi acoustic love songs");
+                    }}
+                    className="text-stone-700 dark:text-stone-300 hover:underline hover:text-stone-900 dark:hover:text-white cursor-pointer transition-colors hidden sm:inline"
+                  >
+                    &ldquo;Soulful Hindi love songs&rdquo;
                   </button>
                 </div>
               </div>
