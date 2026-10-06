@@ -10,7 +10,17 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 5000;
 
-app.use(cors());
+// Robust CORS allowing cross-origin requests with credentials from frontend
+app.use(cors({
+  origin: (origin, callback) => {
+    // Reflect incoming request origin to allow credentials: 'include' across Vercel & localhost
+    callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+}));
+app.options('*', cors());
 app.use(express.json());
 
 // Category backdrop images
