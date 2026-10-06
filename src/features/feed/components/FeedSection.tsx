@@ -69,7 +69,15 @@ export function FeedSection() {
           </h2>
           <p>{t("studio.mixDescription")}</p>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => dispatch(fetchFeed({ resetPage: true }))}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-white/60 dark:bg-stone-800/60 text-xs font-semibold hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 transition-colors cursor-pointer"
+            title="Refresh feed content"
+          >
+            <RotateCcw size={12} />
+            <span>Refresh</span>
+          </button>
           {isReordered ? (
             <button onClick={() => dispatch(resetFeedOrder())}>
               <RotateCcw size={13} />

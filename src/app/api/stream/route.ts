@@ -14,13 +14,8 @@ export async function GET(request: NextRequest) {
       const initMessage = `data: ${JSON.stringify({ type: 'CONNECTED', timestamp: new Date().toISOString() })}\n\n`;
       controller.enqueue(encoder.encode(initMessage));
 
-      const intervalId = setInterval(() => {
-        if (request.signal.aborted) {
-          clearInterval(intervalId);
-          controller.close();
-          return;
-        }
-
+      const sendLivePick = () => {
+        if (request.signal.aborted) return;
         const randomPick = pool[Math.floor(Math.random() * pool.length)];
         const liveEvent = {
           type: 'ITEM',
@@ -32,16 +27,21 @@ export async function GET(request: NextRequest) {
             isTrending: true,
           },
         };
-
         try {
           const payload = `data: ${JSON.stringify(liveEvent)}\n\n`;
           controller.enqueue(encoder.encode(payload));
         } catch {
-          clearInterval(intervalId);
+          // Stream closed
         }
-      }, 8000);
+      };
+
+      // Push first live item quickly within 1.5 seconds so user sees live fetching immediately
+      const initialTimer = setTimeout(sendLivePick, 1500);
+
+      const intervalId = setInterval(sendLivePick, 5000);
 
       request.signal.addEventListener('abort', () => {
+        clearTimeout(initialTimer);
         clearInterval(intervalId);
         try {
           controller.close();

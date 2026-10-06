@@ -13,9 +13,10 @@ const SPOTIFY_SCOPES = [
 ].join(' ');
 
 export const authOptions: AuthOptions = {
-  secret: env.NEXTAUTH_SECRET,
+  secret: env.NEXTAUTH_SECRET || 'pulse-super-secret-key-32-chars-long-fallback',
   session: {
     strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   providers: [
     ...(env.SPOTIFY_CLIENT_ID && env.SPOTIFY_CLIENT_SECRET
@@ -28,20 +29,25 @@ export const authOptions: AuthOptions = {
         ]
       : []),
     CredentialsProvider({
+      id: 'credentials',
       name: 'Credentials',
       credentials: {
+        name: { label: 'Name', type: 'text' },
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email) {
-          return null;
-        }
+        const email = credentials?.email?.trim() || 'demo@pulse.app';
+        const rawName = credentials?.name?.trim();
+        const namePart = email.split('@')[0];
+        const formattedName = rawName || (namePart
+          ? namePart.charAt(0).toUpperCase() + namePart.slice(1)
+          : 'Abhijeet Nayak');
 
         return {
-          id: 'usr_demo_pulse',
-          name: credentials.email.split('@')[0] || 'Demo User',
-          email: credentials.email,
+          id: `usr_${email.replace(/[^a-zA-Z0-9]/g, '_')}`,
+          name: formattedName,
+          email,
           image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
         };
       },
@@ -59,6 +65,10 @@ export const authOptions: AuthOptions = {
       }
 
       if (user) {
+        token.id = user.id;
+        token.name = user.name;
+        token.email = user.email;
+        token.picture = user.image;
         token.isSpotifyConnected = token.isSpotifyConnected ?? false;
         return token;
       }
@@ -76,7 +86,7 @@ export const authOptions: AuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         const userObj = session.user as Record<string, unknown>;
-        userObj.id = token.sub || 'usr_demo_pulse';
+        userObj.id = token.id || token.sub || 'usr_demo_pulse';
         userObj.isSpotifyConnected = Boolean(token.isSpotifyConnected);
       }
       return session;
@@ -84,6 +94,7 @@ export const authOptions: AuthOptions = {
   },
   pages: {
     signIn: '/login',
+    error: '/login',
   },
 };
 

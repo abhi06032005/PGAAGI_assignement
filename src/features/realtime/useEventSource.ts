@@ -32,11 +32,14 @@ export function useEventSource() {
       es.onmessage = (event) => {
         try {
           const payload = JSON.parse(event.data);
-          if (payload.type === 'ITEM' && payload.data) {
-            const item = payload.data as ContentItem;
-            if ((selectedType === 'all' || item.type === selectedType) && (selectedCategory === 'all' ? categories.includes(item.category) : item.category === selectedCategory) && (!query || (item.title+' '+item.summary).toLowerCase().includes(query.toLowerCase()))) dispatch(pushLiveItem(item));
-          } else if (payload.id && payload.title) {
-            dispatch(pushLiveItem(payload as ContentItem));
+          const rawItem = (payload.type === 'ITEM' && payload.data ? payload.data : (payload.id && payload.title ? payload : null)) as ContentItem | null;
+          if (rawItem) {
+            const matchesType = selectedType === 'all' || rawItem.type === selectedType;
+            const matchesCategory = selectedCategory === 'all' || rawItem.category === selectedCategory;
+            const matchesQuery = !query || `${rawItem.title} ${rawItem.summary || ''}`.toLowerCase().includes(query.toLowerCase());
+            if (matchesType && matchesCategory && matchesQuery) {
+              dispatch(pushLiveItem(rawItem));
+            }
           }
         } catch {
           // Ignore parse errors

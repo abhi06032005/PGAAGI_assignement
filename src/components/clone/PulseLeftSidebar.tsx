@@ -20,6 +20,8 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSelectedType } from "@/features/search/searchSlice";
 import { setSettingsModalOpen } from "@/features/auth/authSlice";
 import { logoutUser } from "@/features/auth/authThunks";
+import { signOut } from "next-auth/react";
+
 export function PulseLeftSidebar() {
   const path = usePathname();
   const router = useRouter();
@@ -102,7 +104,10 @@ export function PulseLeftSidebar() {
         <button
           className="nav-item"
           onClick={async () => {
-            if (signedIn) await dispatch(logoutUser());
+            if (signedIn) {
+              await dispatch(logoutUser());
+              await signOut({ redirect: false }).catch(() => {});
+            }
             router.push("/login");
           }}
         >

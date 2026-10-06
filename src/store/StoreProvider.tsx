@@ -5,6 +5,10 @@ import { makeStore } from "./store";
 import { useAppSelector } from "./hooks";
 import { SessionProvider } from "next-auth/react";
 import i18n from "@/lib/i18n";
+import { useSession } from "next-auth/react";
+import { useAppDispatch } from "./hooks";
+import { setIsConnected } from "@/features/spotify/spotifySlice";
+
 function PreferenceSync() {
   const { theme, language } = useAppSelector((s) => s.preferences);
   useEffect(() => {
@@ -24,6 +28,23 @@ function PreferenceSync() {
   }, [language]);
   return null;
 }
+
+function SessionSync() {
+  const { data: session } = useSession();
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    if (session?.user) {
+      const userObj = session.user as Record<string, unknown>;
+      if (userObj.isSpotifyConnected) {
+        dispatch(setIsConnected(true));
+      }
+    }
+  }, [session, dispatch]);
+
+  return null;
+}
+
 const subscribe = () => () => {};
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [store] = useState(() => makeStore());
@@ -36,6 +57,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     <SessionProvider>
       <Provider store={store}>
         <PreferenceSync />
+        <SessionSync />
         {ready ? (
           children
         ) : (

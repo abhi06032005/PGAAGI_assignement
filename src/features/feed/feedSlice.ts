@@ -77,6 +77,13 @@ export const feedSlice = createSlice({
         state.liveQueue = state.liveQueue.slice(0, 50);
       }
     },
+    prependLiveItemDirectly: (state, action: PayloadAction<ContentItem>) => {
+      const item = action.payload;
+      if (!state.items.some((i) => i.id === item.id)) {
+        state.items = [item, ...state.items];
+        state.originalItems = [item, ...state.originalItems];
+      }
+    },
     applyLiveQueueToFeed: (state) => {
       if (state.liveQueue.length > 0) {
         state.items = [...state.liveQueue, ...state.items];
@@ -152,6 +159,7 @@ export const {
   resetFeedOrder,
   setSelectedDetailItem,
   pushLiveItem,
+  prependLiveItemDirectly,
   applyLiveQueueToFeed,
   dismissLiveQueue,
   clearFeedError,

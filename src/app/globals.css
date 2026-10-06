@@ -351,9 +351,15 @@ a {
   overflow: hidden;
   background: #dbefa9;
   border-radius: 20px;
-  min-height: 300px;
+  min-height: 280px;
   padding: 27px;
   color: #273322;
+  border: 1px solid #cbe491;
+}
+.dark .hero-manifesto {
+  background: #182014;
+  color: #e2f4c7;
+  border: 1px solid #2a3821;
 }
 .hero-manifesto h2 {
   font-size: clamp(34px, 3.2vw, 49px);
@@ -387,6 +393,11 @@ a {
   margin-top: 21px;
   position: relative;
   z-index: 1;
+}
+.dark .hero-manifesto button {
+  background: #d7f58b;
+  color: #151d11;
+  font-weight: 700;
 }
 .hero-edition {
   position: absolute;
@@ -780,7 +791,38 @@ a {
   border-radius: 7px;
   color: var(--muted);
 }
-.story-controls button:hover {
+.story-controls button.cta-button {
+  width: auto;
+  min-width: 84px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 8px;
+  background: var(--soft);
+  color: var(--foreground);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.story-controls button.cta-button:hover {
+  background: var(--foreground);
+  color: var(--surface);
+  border-color: var(--foreground);
+}
+.story-controls button.cta-button.music-cta {
+  background: #1db954;
+  color: #ffffff;
+  border-color: #1db954;
+}
+.story-controls button.cta-button.music-cta:hover {
+  background: #1aa34a;
+  border-color: #1aa34a;
+}
+.story-controls button:hover:not(.cta-button) {
   background: var(--soft);
   color: var(--foreground);
 }

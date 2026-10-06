@@ -1,6 +1,6 @@
 "use client";
 import { Reorder, useDragControls } from "framer-motion";
-import { Bookmark, GripVertical, ArrowUpRight } from "lucide-react";
+import { Bookmark, GripVertical, ArrowUpRight, Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ContentItem } from "@/types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -84,10 +84,21 @@ export function ContentCard({
               <Bookmark size={15} fill={saved ? "currentColor" : "none"} />
             </button>
             <button
+              className={`cta-button ${item.type === "music" ? "music-cta" : ""}`}
               aria-label={`Read more about ${item.title}`}
               onClick={() => dispatch(setSelectedDetailItem(item))}
             >
-              <ArrowUpRight size={17} />
+              {item.type === "music" ? (
+                <>
+                  <Play size={12} fill="currentColor" />
+                  <span>Play Now</span>
+                </>
+              ) : (
+                <>
+                  <span>Read More</span>
+                  <ArrowUpRight size={14} />
+                </>
+              )}
             </button>
             {isDraggable && (
               <button
