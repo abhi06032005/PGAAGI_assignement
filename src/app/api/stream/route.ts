@@ -10,7 +10,11 @@ export async function GET(request: NextRequest) {
 
   const stream = new ReadableStream({
     start(controller) {
-      // Send initial connection ACK
+      // Instruct client EventSource engine to never reconnect faster than 30s
+      const retryDirective = 'retry: 30000\n\n';
+      controller.enqueue(encoder.encode(retryDirective));
+
+      // Initial connection ACK
       const initMessage = `data: ${JSON.stringify({ type: 'CONNECTED', timestamp: new Date().toISOString() })}\n\n`;
       controller.enqueue(encoder.encode(initMessage));
 
@@ -35,10 +39,11 @@ export async function GET(request: NextRequest) {
         }
       };
 
-      // Push first live item quickly within 1.5 seconds so user sees live fetching immediately
-      const initialTimer = setTimeout(sendLivePick, 1500);
+      // Push initial item after 3 seconds
+      const initialTimer = setTimeout(sendLivePick, 3000);
 
-      const intervalId = setInterval(sendLivePick, 5000);
+      // Throttled push every 25 seconds to protect bandwidth and avoid crashing
+      const intervalId = setInterval(sendLivePick, 25000);
 
       request.signal.addEventListener('abort', () => {
         clearTimeout(initialTimer);

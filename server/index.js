@@ -1104,10 +1104,13 @@ app.get('/api/stream', (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
 
+  // Instruct client EventSource engine to never reconnect faster than 30s
+  res.write('retry: 30000\n\n');
+
   // Initial connection ACK
   res.write(`data: ${JSON.stringify({ type: 'CONNECTED', timestamp: new Date().toISOString() })}\n\n`);
 
-  // Stream live items every 6 seconds
+  // Stream live items every 25 seconds (throttled to prevent overload)
   const pushRandomLiveItem = async () => {
     try {
       const categories = ['technology', 'science', 'finance', 'sports', 'entertainment', 'health'];
@@ -1132,8 +1135,8 @@ app.get('/api/stream', (req, res) => {
     } catch {}
   };
 
-  const initialTimer = setTimeout(pushRandomLiveItem, 1500);
-  const intervalId = setInterval(pushRandomLiveItem, 5000);
+  const initialTimer = setTimeout(pushRandomLiveItem, 3000);
+  const intervalId = setInterval(pushRandomLiveItem, 25000);
 
   req.on('close', () => {
     clearTimeout(initialTimer);
