@@ -1,17 +1,19 @@
 "use client";
 import { useEffect } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Radio, Bookmark, Plus } from "lucide-react";
+import { ArrowUpRight, Radio, Bookmark, Plus, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchTrending } from "@/features/feed/feedThunks";
 import { setSelectedDetailItem } from "@/features/feed/feedSlice";
 import { setSettingsModalOpen } from "@/features/auth/authSlice";
 import { SafeImage } from "@/components/ui/SafeImage";
+import { Skeleton } from "@/components/ui/Skeleton";
 export function StudioRail({ connected }: { connected: boolean }) {
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
   const items = useAppSelector((s) => s.feed.trendingAll);
+  const status = useAppSelector((s) => s.feed.trendingStatus);
   const saved = useAppSelector((s) => s.favorites.favoriteItems);
   const categories = useAppSelector((s) => s.preferences.favoriteCategories);
   useEffect(() => {
@@ -48,8 +50,30 @@ export function StudioRail({ connected }: { connected: boolean }) {
               </span>
             </button>
           ))}
-          {!items.length && (
-            <p className="muted">{t("studio.findingStories")}</p>
+          {!items.length && (status === "loading" || status === "idle") && (
+            <div role="status" aria-label={t("studio.findingStories")}>
+              {[0, 1, 2, 3].map((i) => (
+                <div className="radar-skeleton" key={i}>
+                  <Skeleton className="h-7 w-6" />
+                  <div>
+                    <Skeleton className="h-2 w-16 mb-3" />
+                    <Skeleton className="h-3 w-full mb-2" />
+                    <Skeleton className="h-3 w-3/4" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {!items.length && status === "failed" && (
+            <div className="rail-error" role="status">
+              {t("design.trendingError")}
+              <button onClick={() => dispatch(fetchTrending("all"))}>
+                {t("design.reloadRadar")}
+              </button>
+            </div>
+          )}
+          {!items.length && status === "succeeded" && (
+            <p className="rail-error">{t("design.noTrends")}</p>
           )}
         </div>
       </section>
@@ -65,7 +89,7 @@ export function StudioRail({ connected }: { connected: boolean }) {
         </div>
         <div className="interest-tags">
           {categories.map((c) => (
-            <span key={c}>#{c}</span>
+            <span key={c}>{t(`categories.${c}`, c)}</span>
           ))}
         </div>
         <p>{t("studio.interestsHint")}</p>
@@ -103,7 +127,9 @@ export function StudioRail({ connected }: { connected: boolean }) {
         </Link>
       </section>
       <div className="quiet-note">
-        <span>✳</span>
+        <span className="flex items-center justify-center">
+          <Sparkles size={14} className="text-amber-500" />
+        </span>
         <p>
           {t("studio.stayCurious")}
           <br />

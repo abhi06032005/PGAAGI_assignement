@@ -12,9 +12,18 @@ import searchReducer, {
   setQuery,
   setDebouncedQuery,
   setSelectedCategory,
+  setSelectedNewsRegion,
+  setCustomNewsTopic,
   resetSearch,
 } from '@/features/search/searchSlice';
-import { NewsItem, UserPreferences, Category, ContentType } from '@/types';
+import spotifyReducer, {
+  playTrack,
+  playPlaylist,
+  nextTrack,
+  prevTrack,
+  DEFAULT_MUSIC_QUEUE,
+} from '@/features/spotify/spotifySlice';
+import { NewsItem, UserPreferences, Category, ContentType, MusicItem } from '@/types';
 
 const sampleItem: NewsItem = {
   id: 'news-test-1',
@@ -114,5 +123,87 @@ describe('searchSlice', () => {
     state = searchReducer(state, resetSearch());
     expect(state.query).toBe('');
     expect(state.selectedCategory).toBe('all');
+    expect(state.selectedNewsRegion).toBe('all');
+    expect(state.customNewsTopic).toBe('');
+  });
+
+  it('should handle news region and custom topic filtering', () => {
+    let state = searchReducer(undefined, setSelectedNewsRegion('india'));
+    expect(state.selectedNewsRegion).toBe('india');
+
+    state = searchReducer(state, setSelectedNewsRegion('international'));
+    expect(state.selectedNewsRegion).toBe('international');
+
+    state = searchReducer(state, setSelectedNewsRegion('custom'));
+    state = searchReducer(state, setCustomNewsTopic('AI & Space'));
+    expect(state.selectedNewsRegion).toBe('custom');
+    expect(state.customNewsTopic).toBe('AI & Space');
+  });
+});
+
+describe('spotifySlice - next track and queue skipping', () => {
+  const sampleTrackA: MusicItem = {
+    id: 'track-alpha',
+    type: 'music',
+    title: 'Alpha Waves',
+    artist: 'Mind Drift',
+    album: 'Frequencies',
+    summary: 'Calm ambient focus sound',
+    category: 'technology',
+    timestamp: 'Just now',
+  };
+
+  const sampleTrackB: MusicItem = {
+    id: 'track-beta',
+    type: 'music',
+    title: 'Beta Groove',
+    artist: 'Rhythm Lab',
+    album: 'Motion',
+    summary: 'Dynamic electronic tempo',
+    category: 'entertainment',
+    timestamp: 'Just now',
+  };
+
+  it('should auto-populate a queue when playing a track and enable playing next song', () => {
+    let state = spotifyReducer(undefined, playTrack(sampleTrackA));
+    expect(state.currentTrack?.id).toBe('track-alpha');
+    expect(state.isPlaying).toBe(true);
+    // Queue should have more than 1 track so skipping is immediately possible
+    expect(state.currentPlaylist.length).toBeGreaterThan(1);
+    expect(state.playlistIndex).toBe(0);
+
+    // User does not want to play the current song -> clicks next song
+    state = spotifyReducer(state, nextTrack());
+    expect(state.playlistIndex).toBe(1);
+    expect(state.currentTrack?.id).not.toBe('track-alpha');
+    expect(state.isPlaying).toBe(true);
+  });
+
+  it('should cycle through tracks using nextTrack and prevTrack', () => {
+    let state = spotifyReducer(
+      undefined,
+      playPlaylist({
+        playlist: [sampleTrackA, sampleTrackB],
+        startIndex: 0,
+        title: 'Test Playlist',
+      })
+    );
+    expect(state.currentTrack?.title).toBe('Alpha Waves');
+    expect(state.playlistIndex).toBe(0);
+
+    // Skip to next song
+    state = spotifyReducer(state, nextTrack());
+    expect(state.currentTrack?.title).toBe('Beta Groove');
+    expect(state.playlistIndex).toBe(1);
+
+    // Skip to next song (wraps to start)
+    state = spotifyReducer(state, nextTrack());
+    expect(state.currentTrack?.title).toBe('Alpha Waves');
+    expect(state.playlistIndex).toBe(0);
+
+    // Previous song
+    state = spotifyReducer(state, prevTrack());
+    expect(state.currentTrack?.title).toBe('Beta Groove');
+    expect(state.playlistIndex).toBe(1);
   });
 });

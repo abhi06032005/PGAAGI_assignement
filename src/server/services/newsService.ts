@@ -1,7 +1,7 @@
 import 'server-only';
 import env from '../env';
 import serverCache from '../cache';
-import { NewsItem, Category } from '@/types';
+import { NewsItem, Category, NewsRegion } from '@/types';
 import { mockNewsArticles } from '../mocks/news';
 import { getCategoryPlaceholderAlt } from './imageService';
 import { normalizeContentItem } from './normalize';
@@ -17,15 +17,34 @@ interface NewsApiArticle {
   content: string | null;
 }
 
-export async function fetchNewsArticles(category?: Category): Promise<NewsItem[]> {
-  const cacheKey = `news:${category || 'all'}`;
+export async function fetchNewsArticles(
+  category?: Category,
+  region?: NewsRegion,
+  customQuery?: string
+): Promise<NewsItem[]> {
+  const effectiveRegion = region || 'all';
+  const cacheKey = `news:${category || 'all'}:${effectiveRegion}:${customQuery || ''}`;
   const cached = serverCache.get<NewsItem[]>(cacheKey);
   if (cached) return cached;
 
   if (env.NEWS_API_KEY) {
     try {
-      const newsCategory = category && category !== 'all' && category !== 'space' ? (category === 'finance' ? 'business' : category) : 'technology';
-      const url = `https://newsapi.org/v2/top-headlines?country=us&category=${newsCategory}&pageSize=15&apiKey=${env.NEWS_API_KEY}`;
+      const newsCategory =
+        category && category !== 'all' && category !== 'space'
+          ? category === 'finance'
+            ? 'business'
+            : category
+          : 'technology';
+
+      let url = '';
+      if (effectiveRegion === 'india') {
+        url = `https://newsapi.org/v2/top-headlines?country=in&category=${newsCategory}&pageSize=15&apiKey=${env.NEWS_API_KEY}`;
+      } else if (effectiveRegion === 'custom' && customQuery?.trim()) {
+        url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(customQuery.trim())}&pageSize=15&sortBy=publishedAt&apiKey=${env.NEWS_API_KEY}`;
+      } else {
+        url = `https://newsapi.org/v2/top-headlines?country=us&category=${newsCategory}&pageSize=15&apiKey=${env.NEWS_API_KEY}`;
+      }
+
       const response = await fetch(url, { signal: AbortSignal.timeout(6000), next: { revalidate: 900 } });
 
       if (response.ok) {
@@ -45,11 +64,12 @@ export async function fetchNewsArticles(category?: Category): Promise<NewsItem[]
                 description: art.description || art.title,
                 imageUrl,
                 imageAlt,
-                source: art.source?.name || 'NewsAPI',
+                source: art.source?.name || (effectiveRegion === 'india' ? 'Indian Express' : 'NewsAPI Global'),
                 url: art.url,
                 publishedAt: art.publishedAt,
                 category: effectiveCategory,
-                tags: [art.source?.name || 'News', effectiveCategory],
+                region: effectiveRegion === 'india' ? 'india' : 'international',
+                tags: [art.source?.name || 'News', effectiveCategory, effectiveRegion === 'india' ? 'India' : 'International'],
                 author: art.author || 'Staff Writer',
                 readTimeMinutes: Math.floor(Math.random() * 4) + 2,
                 isTrending: index < 3,
@@ -69,9 +89,23 @@ export async function fetchNewsArticles(category?: Category): Promise<NewsItem[]
 
   // Fallback to high quality mock news
   let fallbackItems = [...mockNewsArticles];
+
+  // Region filter
+  if (effectiveRegion === 'india') {
+    fallbackItems = fallbackItems.filter((i) => i.region === 'india');
+  } else if (effectiveRegion === 'international') {
+    fallbackItems = fallbackItems.filter((i) => i.region === 'international');
+  } else if (effectiveRegion === 'custom' && customQuery?.trim()) {
+    const q = customQuery.trim().toLowerCase();
+    fallbackItems = fallbackItems.filter(
+      (i) => i.title.toLowerCase().includes(q) || i.summary.toLowerCase().includes(q)
+    );
+  }
+
+  // Category filter
   if (category && category !== 'all') {
-    fallbackItems = fallbackItems.filter((i) => i.category === category);
-    if (fallbackItems.length === 0) fallbackItems = [...mockNewsArticles];
+    const categoryFiltered = fallbackItems.filter((i) => i.category === category);
+    if (categoryFiltered.length > 0) fallbackItems = categoryFiltered;
   }
 
   serverCache.set(cacheKey, fallbackItems, 300);

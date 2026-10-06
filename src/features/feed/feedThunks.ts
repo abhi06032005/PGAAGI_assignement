@@ -36,6 +36,14 @@ export const fetchFeed = createAsyncThunk(
         queryParams.search = debouncedQuery.trim();
       }
 
+      if (state.search.selectedNewsRegion && state.search.selectedNewsRegion !== 'all') {
+        queryParams.region = state.search.selectedNewsRegion;
+      }
+
+      if (state.search.customNewsTopic && state.search.customNewsTopic.trim()) {
+        queryParams.customTopic = state.search.customNewsTopic.trim();
+      }
+
       // Calls /api/feed which Next.js rewrites to Express backend
       const response = await apiClient.get<PaginatedResponse<ContentItem> | { data: ContentItem[]; hasMore: boolean; nextPage?: number }>(
         '/api/feed',

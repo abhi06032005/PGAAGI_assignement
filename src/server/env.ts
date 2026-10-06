@@ -6,6 +6,8 @@ const envSchema = z.object({
   NEXTAUTH_URL: z.string().default('http://localhost:3000'),
   SPOTIFY_CLIENT_ID: z.string().optional(),
   SPOTIFY_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
   NEWS_API_KEY: z.string().optional(),
   TMDB_API_KEY: z.string().optional(),
   NASA_API_KEY: z.string().default('DEMO_KEY'),

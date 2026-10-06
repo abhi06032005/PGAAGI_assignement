@@ -39,6 +39,21 @@ function SessionSync() {
       if (userObj.isSpotifyConnected) {
         dispatch(setIsConnected(true));
       }
+      const userName = (userObj.name as string) || (userObj.email ? (userObj.email as string).split('@')[0] : 'Pulse Member');
+      const email = (userObj.email as string) || '';
+      dispatch({
+        type: 'auth/setLocalUser',
+        payload: {
+          id: (userObj.id as string) || 'usr_session',
+          name: userName,
+          email,
+          handle: '@' + (email ? email.split('@')[0] : 'member'),
+          bio: 'Pulse member',
+          avatar: (userObj.image as string) || (userObj.picture as string) || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userName)}`,
+          joinedDate: 'Active Member',
+          isAuthenticated: true,
+        },
+      });
     }
   }, [session, dispatch]);
 

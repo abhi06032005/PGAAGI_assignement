@@ -1,11 +1,13 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Category, ContentType } from '@/types';
+import { Category, ContentType, NewsRegion } from '@/types';
 
 export interface SearchState {
   query: string;
   debouncedQuery: string;
   selectedCategory: Category | 'all';
   selectedType: ContentType | 'all';
+  selectedNewsRegion: NewsRegion;
+  customNewsTopic: string;
 }
 
 const initialState: SearchState = {
@@ -13,6 +15,8 @@ const initialState: SearchState = {
   debouncedQuery: '',
   selectedCategory: 'all',
   selectedType: 'all',
+  selectedNewsRegion: 'all',
+  customNewsTopic: '',
 };
 
 export const searchSlice = createSlice({
@@ -31,11 +35,19 @@ export const searchSlice = createSlice({
     setSelectedType: (state, action: PayloadAction<ContentType | 'all'>) => {
       state.selectedType = action.payload;
     },
+    setSelectedNewsRegion: (state, action: PayloadAction<NewsRegion>) => {
+      state.selectedNewsRegion = action.payload;
+    },
+    setCustomNewsTopic: (state, action: PayloadAction<string>) => {
+      state.customNewsTopic = action.payload;
+    },
     resetSearch: (state) => {
       state.query = '';
       state.debouncedQuery = '';
       state.selectedCategory = 'all';
       state.selectedType = 'all';
+      state.selectedNewsRegion = 'all';
+      state.customNewsTopic = '';
     },
   },
 });
@@ -45,6 +57,8 @@ export const {
   setDebouncedQuery,
   setSelectedCategory,
   setSelectedType,
+  setSelectedNewsRegion,
+  setCustomNewsTopic,
   resetSearch,
 } = searchSlice.actions;
 

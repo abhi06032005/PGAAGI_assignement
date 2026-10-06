@@ -4,11 +4,12 @@ import { useDialog } from '@/components/modals/useDialog';
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setProfileModalOpen } from './authSlice';
-import { updateProfile } from './authThunks';
+import { updateProfile, logoutUser } from './authThunks';
+import { signOut } from 'next-auth/react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/Button';
 import { SafeImage } from '@/components/ui/SafeImage';
-import { X, User, Mail, FileText, Check } from 'lucide-react';
+import { X, User, Mail, FileText, Check, LogOut } from 'lucide-react';
 
 export const ProfileModal: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -105,24 +106,40 @@ export const ProfileModal: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-stone-100 dark:border-stone-800">
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-stone-100 dark:border-stone-800">
             <Button
               type="button"
-              variant="ghost"
-              onClick={() => dispatch(setProfileModalOpen(false))}
+              variant="outline"
+              onClick={async () => {
+                dispatch(setProfileModalOpen(false));
+                await dispatch(logoutUser());
+                await signOut({ redirect: false }).catch(() => {});
+                window.location.href = '/login';
+              }}
+              className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-200 dark:border-rose-900/40"
             >
-              Cancel
+              <LogOut className="w-3.5 h-3.5 mr-1" />
+              <span>Sign Out</span>
             </Button>
-            <Button type="submit" variant="primary" className="gap-1.5">
-              {savedSuccess ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span>Saved!</span>
-                </>
-              ) : (
-                <span>Save Changes</span>
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => dispatch(setProfileModalOpen(false))}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" className="gap-1.5">
+                {savedSuccess ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-400" />
+                    <span>Saved!</span>
+                  </>
+                ) : (
+                  <span>Save Changes</span>
+                )}
+              </Button>
+            </div>
           </div>
         </form>
       </GlassCard>

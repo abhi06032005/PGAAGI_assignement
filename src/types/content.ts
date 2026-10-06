@@ -10,6 +10,8 @@ export type Category =
   | 'space'
   | 'all';
 
+export type NewsRegion = 'all' | 'india' | 'international' | 'custom';
+
 export type VibeLabel = 'Chill' | 'Energetic' | 'Focused' | 'Feel-good' | 'Hype';
 
 export interface VibeData {
@@ -39,6 +41,7 @@ export interface NormalizedContentItem {
   timestamp: string; // backwards compatibility alias for publishedAt
   tags?: string[];
   category: Category;
+  region?: 'india' | 'international';
   isTrending?: boolean;
   vibeScore?: number;
 }
@@ -47,6 +50,7 @@ export interface NewsItem extends NormalizedContentItem {
   type: 'news';
   author?: string;
   readTimeMinutes?: number;
+  region?: 'india' | 'international';
 }
 
 export interface RecommendationItem extends NormalizedContentItem {
@@ -113,4 +117,25 @@ export interface SpotifyArtist {
   name: string;
   genres: string[];
   imageUrl?: string;
+}
+
+export interface MoodSentiment {
+  moodTag: string;
+  energy: number; // 0 - 100
+  valence: number; // 0 - 100
+  danceability: number; // 0 - 100
+  tempoBpm: number;
+  vibeSummary: string;
+  recommendedGenres: string[];
+  rationale?: string;
+}
+
+export interface AiMoodPlaylist {
+  id: string;
+  title: string;
+  description: string;
+  prompt: string;
+  createdAt: string;
+  sentiment: MoodSentiment;
+  tracks: MusicItem[];
 }

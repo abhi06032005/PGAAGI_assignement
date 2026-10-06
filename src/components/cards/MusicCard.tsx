@@ -2,9 +2,11 @@
 
 import React from 'react';
 import { MusicItem } from '@/types';
-import { Music, Heart, ExternalLink } from 'lucide-react';
+import { Music, Heart, Play } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { SafeImage } from '@/components/ui/SafeImage';
+import { useAppDispatch } from '@/store/hooks';
+import { playTrack } from '@/features/spotify/spotifySlice';
 
 interface MusicCardProps {
   item: MusicItem;
@@ -19,6 +21,7 @@ export const MusicCard: React.FC<MusicCardProps> = ({
   onToggleFavorite,
   onSelect,
 }) => {
+  const dispatch = useAppDispatch();
   return (
     <GlassCard
       variant="interactive"
@@ -73,18 +76,17 @@ export const MusicCard: React.FC<MusicCardProps> = ({
 
       <div className="flex items-center justify-between mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 text-xs text-stone-500">
         <span className="truncate max-w-[140px]">{item.summary}</span>
-        {item.url && (
-          <a
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-medium"
-          >
-            <span>Play</span>
-            <ExternalLink className="w-3 h-3" />
-          </a>
-        )}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            dispatch(playTrack(item));
+          }}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1db954] hover:bg-[#1aa34a] text-black font-bold text-xs shadow-xs transition-transform hover:scale-105 cursor-pointer"
+        >
+          <Play className="w-3 h-3 fill-current ml-0.5" />
+          <span>Play in App</span>
+        </button>
       </div>
     </GlassCard>
   );

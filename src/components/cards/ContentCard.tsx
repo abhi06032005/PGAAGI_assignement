@@ -1,22 +1,32 @@
 "use client";
 import { Reorder, useDragControls } from "framer-motion";
-import { Bookmark, GripVertical, ArrowUpRight, Play } from "lucide-react";
+import {
+  Bookmark,
+  GripVertical,
+  ArrowUpRight,
+  Play,
+  ExternalLink,
+  Star,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { ContentItem } from "@/types";
+import { ContentItem, MusicItem } from "@/types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { toggleFavorite } from "@/features/favorites/favoritesSlice";
 import { setSelectedDetailItem } from "@/features/feed/feedSlice";
+import { playTrack } from "@/features/spotify/spotifySlice";
 import { SafeImage } from "../ui/SafeImage";
 export function ContentCard({
   item,
   isDraggable = false,
   onMoveUp,
   onMoveDown,
+  inCollection = false,
 }: {
   item: ContentItem;
   isDraggable?: boolean;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  inCollection?: boolean;
 }) {
   const dispatch = useAppDispatch();
   const controls = useDragControls();
@@ -62,20 +72,36 @@ export function ContentCard({
         <p className="story-summary">{item.summary}</p>
         <div className="story-bottom">
           <span className="story-source">
-            {item.source || item.sourceName || "Pulse"}
+            {item.type === "music"
+              ? item.artist
+              : item.source || item.sourceName || "Pulse"}
             {item.type === "news" && item.readTimeMinutes && (
               <span> · {item.readTimeMinutes} min read</span>
             )}
             {item.type === "recommendation" && (
-              <span>
+              <span className="inline-flex items-center gap-1">
                 {" "}
-                · ★ <span>{item.rating}</span>/10 · By {item.creator}
+                · <Star size={11} className="fill-amber-400 text-amber-400 inline" />
+                <span>{item.rating}</span>/10 · By {item.creator}
               </span>
             )}
           </span>
           <div className="story-controls">
+            {inCollection && item.url && (
+              <a
+                className="source-link"
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Open source for ${item.title}`}
+              >
+                <ExternalLink size={15} />
+              </a>
+            )}
             <button
-              aria-label="Toggle favorite"
+              aria-label={
+                inCollection ? "Remove from favorites" : "Toggle favorite"
+              }
               aria-pressed={saved}
               title={saved ? "Remove from favorites" : "Add to favorites"}
               className={saved ? "saved" : ""}
@@ -85,8 +111,18 @@ export function ContentCard({
             </button>
             <button
               className={`cta-button ${item.type === "music" ? "music-cta" : ""}`}
-              aria-label={`Read more about ${item.title}`}
-              onClick={() => dispatch(setSelectedDetailItem(item))}
+              aria-label={
+                item.type === "music"
+                  ? `Play ${item.title}`
+                  : `Read more about ${item.title}`
+              }
+              onClick={() => {
+                if (item.type === "music") {
+                  dispatch(playTrack(item as MusicItem));
+                } else {
+                  dispatch(setSelectedDetailItem(item));
+                }
+              }}
             >
               {item.type === "music" ? (
                 <>

@@ -97,6 +97,17 @@ export const feedSlice = createSlice({
     clearFeedError: (state) => {
       state.error = null;
     },
+    addCustomItem: (state, action: PayloadAction<ContentItem>) => {
+      const item = action.payload;
+      state.items = [item, ...state.items.filter((i) => i.id !== item.id)];
+      state.originalItems = [item, ...state.originalItems.filter((i) => i.id !== item.id)];
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = JSON.parse(localStorage.getItem('pulse_custom_items') || '[]');
+          localStorage.setItem('pulse_custom_items', JSON.stringify([item, ...stored.filter((i: ContentItem) => i.id !== item.id)]));
+        } catch {}
+      }
+    },
     incrementPage: (state) => {
       state.page += 1;
     },
@@ -163,6 +174,7 @@ export const {
   applyLiveQueueToFeed,
   dismissLiveQueue,
   clearFeedError,
+  addCustomItem,
   incrementPage,
 } = feedSlice.actions;
 

@@ -1,14 +1,22 @@
 import { withAuth } from 'next-auth/middleware';
 
 export default withAuth({
+  pages: {
+    signIn: '/login',
+  },
   callbacks: {
-    authorized: () => {
-      // Allow dashboard demo preview; user can also sign in/out at any time
-      return true;
+    authorized: ({ token }) => {
+      // Require a valid token (user must be authenticated)
+      return !!token;
     },
   },
 });
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|login).*)'],
+  matcher: [
+    '/',
+    '/discover/:path*',
+    '/favorites/:path*',
+    '/trending/:path*',
+  ],
 };

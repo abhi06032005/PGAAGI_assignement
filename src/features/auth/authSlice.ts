@@ -3,14 +3,14 @@ import { UserProfile } from '@/types';
 import { loginUser, checkAuthSession, logoutUser, updateProfile } from './authThunks';
 
 const defaultUser: UserProfile = {
-  id: 'usr-demo',
-  name: 'Abhijeet Nayak',
-  email: 'demo@pulse.app',
-  handle: '@abhijeet',
-  bio: 'Software engineer building modern reactive dashboards, design systems, and AI workflows.',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-  joinedDate: 'Joined October 2026',
-  isAuthenticated: true,
+  id: '',
+  name: '',
+  email: '',
+  handle: '',
+  bio: '',
+  avatar: '',
+  joinedDate: '',
+  isAuthenticated: false,
 };
 
 export interface AuthSliceState {
@@ -24,7 +24,7 @@ export interface AuthSliceState {
 
 const initialState: AuthSliceState = {
   user: defaultUser,
-  isAuthenticated: true,
+  isAuthenticated: false,
   isLoading: false,
   error: null,
   isProfileModalOpen: false,
@@ -71,8 +71,8 @@ export const authSlice = createSlice({
         state.isAuthenticated = true;
       })
       .addCase(checkAuthSession.rejected, (state) => {
-        // Keep demo user authenticated for seamless reviewer preview
-        state.isAuthenticated = true;
+        state.isAuthenticated = false;
+        state.user = defaultUser;
       })
       // logoutUser
       .addCase(logoutUser.fulfilled, (state) => {

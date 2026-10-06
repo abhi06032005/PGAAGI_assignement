@@ -14,11 +14,14 @@ import {
   Users,
   LogOut,
   ArrowUpRight,
+  Headphones,
+  Sparkles,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSelectedType } from "@/features/search/searchSlice";
 import { setSettingsModalOpen } from "@/features/auth/authSlice";
+import { setAiDjModalOpen } from "@/features/spotify/spotifySlice";
 import { logoutUser } from "@/features/auth/authThunks";
 import { signOut } from "next-auth/react";
 
@@ -29,6 +32,7 @@ export function PulseLeftSidebar() {
   const { t } = useTranslation();
   const count = useAppSelector((s) => s.favorites.favoriteIds.length);
   const signedIn = useAppSelector((s) => s.auth.isAuthenticated);
+  const selectedType = useAppSelector((s) => s.search.selectedType);
   const nav = [
     ["/", "dashboard", LayoutGrid],
     ["/discover", "discover", Compass],
@@ -50,11 +54,12 @@ export function PulseLeftSidebar() {
         pulse<span className="brand-dot">®</span>
       </Link>
       <p className="sidebar-label">{t("studio.workspace")}</p>
-      <nav>
+      <nav aria-label="Main navigation">
         {nav.map(([href, key, Icon]) => (
           <Link
             key={href}
             href={href}
+            aria-current={path === href ? "page" : undefined}
             className={`nav-item ${path === href ? "active" : ""}`}
           >
             <Icon size={19} />
@@ -68,7 +73,8 @@ export function PulseLeftSidebar() {
         {sources.map(([type, Icon]) => (
           <button
             key={type}
-            className="nav-item"
+            className={`nav-item ${selectedType === type && path === "/" ? "channel-active" : ""}`}
+            aria-pressed={selectedType === type && path === "/"}
             onClick={() => {
               dispatch(setSelectedType(type));
               router.push("/");
@@ -83,10 +89,21 @@ export function PulseLeftSidebar() {
             <span className={`source-dot ${type}`} />
           </button>
         ))}
+        <button
+          className="nav-item sidebar-dj"
+          onClick={() => dispatch(setAiDjModalOpen(true))}
+          title="Curate music matching your emotion"
+        >
+          <Headphones size={18} />
+          <span>AI Mood DJ</span>
+          <ArrowUpRight size={14} className="ml-auto" />
+        </button>
       </div>
       <div className="sidebar-bottom">
         <div className="curate-note">
-          <span className="sparkle-mark">✳</span>
+          <span className="curate-mark" aria-hidden="true">
+            <Sparkles size={14} className="text-amber-500" />
+          </span>
           <strong>{t("studio.makeItYours")}</strong>
           <p>{t("studio.tuneInterests")}</p>
           <button onClick={() => dispatch(setSettingsModalOpen(true))}>

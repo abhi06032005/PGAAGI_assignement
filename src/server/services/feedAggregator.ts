@@ -1,5 +1,5 @@
 import "server-only";
-import { Category, ContentItem, ContentType, VibeLabel } from "@/types";
+import { Category, ContentItem, ContentType, NewsRegion, VibeLabel } from "@/types";
 import { fetchNewsArticles } from "./newsService";
 import { fetchTmdbRecommendations } from "./tmdbService";
 import { fetchSocialPosts } from "./socialService";
@@ -9,6 +9,8 @@ interface Options {
   category?: string;
   type?: string;
   search?: string;
+  region?: NewsRegion;
+  customTopic?: string;
   page?: number;
   limit?: number;
   activeVibe?: VibeLabel;
@@ -19,6 +21,8 @@ export async function getAggregatedFeed({
   category = "all",
   type = "all",
   search = "",
+  region = "all",
+  customTopic = "",
   page = 1,
   limit = 12,
   activeVibe = "Chill",
@@ -32,7 +36,7 @@ export async function getAggregatedFeed({
   const results = await Promise.allSettled([
     Promise.all(
       (categories.length ? categories : [undefined]).map((c) =>
-        fetchNewsArticles(c),
+        fetchNewsArticles(c, region, customTopic),
       ),
     ).then((groups) => groups.flat()),
     fetchTmdbRecommendations(),

@@ -48,10 +48,16 @@ export async function GET(request: NextRequest) {
     .filter((t) => Boolean(TYPE_ALIAS_MAP[t]));
   const type = typesList.length > 0 ? typesList.join(",") : "all";
 
+  const rawRegion = p.get("region");
+  const region = (rawRegion === "india" || rawRegion === "international" || rawRegion === "custom") ? rawRegion : "all";
+  const customTopic = (p.get("customTopic") || "").slice(0, 100);
+
   try {
     const result = await getAggregatedFeed({
       category,
       type,
+      region,
+      customTopic,
       page,
       limit,
       search: (p.get("search") || "").slice(0, 200),

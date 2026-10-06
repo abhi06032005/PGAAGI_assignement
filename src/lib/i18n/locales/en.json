@@ -102,5 +102,27 @@
     "health": "Health",
     "science": "Science",
     "space": "Space"
+  },
+  "design": {
+    "discoverTitle": "Follow your curiosity.",
+    "discoverSubtitle": "New perspectives, fresh sounds, and your next great read.",
+    "freshPerspective": "A fresh perspective is waiting.",
+    "yourSoundtrack": "YOUR SOUNDTRACK",
+    "setTheTone": "Set the tone.",
+    "soundtrackDescription": "A playlist for whatever today feels like. Made around your mood.",
+    "makePlaylist": "Make a playlist",
+    "poweredByMood": "A little mood. A whole new mix.",
+    "addPost": "Add Custom Post",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "trendingError": "Your radar is taking a moment.",
+    "noTrends": "Nothing on your radar yet.",
+    "retry": "Try again",
+    "collectionEmpty": "Make room for a good read.",
+    "collectionHint": "Save a story, a sound, or an idea. It will be right here when you need it.",
+    "noSavedMatches": "No saved items match your search.",
+    "clearSearch": "Clear search",
+    "exploreFeed": "Explore your feed",
+    "reloadRadar": "Reload radar"
   }
 }
