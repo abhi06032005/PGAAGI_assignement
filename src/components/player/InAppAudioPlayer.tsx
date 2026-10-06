@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   togglePlayback,
@@ -24,6 +24,44 @@ import {
 } from "lucide-react";
 import { SafeImage } from "@/components/ui/SafeImage";
 
+declare global {
+  interface Window {
+    YT: {
+      Player: new (
+        elementId: string | HTMLElement,
+        options: {
+          videoId?: string;
+          playerVars?: Record<string, unknown>;
+          events?: {
+            onReady?: (event: { target: YTPlayerInstance }) => void;
+            onStateChange?: (event: { data: number }) => void;
+            onError?: () => void;
+          };
+        }
+      ) => YTPlayerInstance;
+      PlayerState: {
+        ENDED: number;
+        PLAYING: number;
+        PAUSED: number;
+        BUFFERING: number;
+        CUED: number;
+      };
+    };
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
+interface YTPlayerInstance {
+  playVideo: () => void;
+  pauseVideo: () => void;
+  seekTo: (seconds: number, allowSeekAhead?: boolean) => void;
+  setVolume: (volume: number) => void;
+  getCurrentTime: () => number;
+  getDuration: () => number;
+  loadVideoById: (videoId: string) => void;
+  destroy: () => void;
+}
+
 // Authentic high-fidelity audio streams for fallback
 const AUTHENTIC_AUDIO_STREAMS = [
   "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/24/09/79/2409794c-3d5d-af26-580e-7dc00ee4f207/mzaf_369629549966021675.plus.aac.p.m4a", // M83 Midnight City
@@ -45,32 +83,163 @@ export const InAppAudioPlayer: React.FC = () => {
   const dispatch = useAppDispatch();
   const { currentTrack, isPlaying, volume, currentPlaylist, playlistIndex } =
     useAppSelector((state) => state.spotify);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const ytPlayerRef = useRef<YTPlayerInstance | null>(null);
+  const isYtReadyRef = useRef(false);
 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(30);
   const [isMuted, setIsMuted] = useState(false);
   const [activeAudioSrc, setActiveAudioSrc] = useState<string | null>(null);
   const [resolvedArtwork, setResolvedArtwork] = useState<string | null>(null);
+  const [isFullSongActive, setIsFullSongActive] = useState(false);
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
 
-  // Dynamically resolve authentic song audio for currentTrack if previewUrl is missing or SoundHelix
+  // Load YouTube Iframe API once
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!window.YT) {
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      const firstScriptTag = document.getElementsByTagName("script")[0];
+      firstScriptTag?.parentNode?.insertBefore(tag, firstScriptTag);
+    }
+  }, []);
+
+  // Initialize or re-create YouTube Player when videoId is available
+  const onPlayerReady = useCallback((event: { target: YTPlayerInstance }) => {
+    ytPlayerRef.current = event.target;
+    isYtReadyRef.current = true;
+    event.target.setVolume(isMuted ? 0 : volume * 100);
+    const dur = event.target.getDuration();
+    if (dur && dur > 10) {
+      setDuration(Math.floor(dur));
+    }
+    if (isPlaying) {
+      event.target.playVideo();
+      // Mute the fallback HTML5 audio so only full YouTube audio plays
+      if (audioRef.current) audioRef.current.pause();
+    }
+  }, [isMuted, volume, isPlaying]);
+
+  const onPlayerStateChange = useCallback((event: { data: number }) => {
+    if (event.data === 0) {
+      // ENDED: Continuous playback for full songs
+      dispatch(nextTrack());
+    }
+  }, [dispatch]);
+
+  // Init YouTube Player instance
+  useEffect(() => {
+    if (!activeVideoId || typeof window === "undefined") return;
+
+    let timer: NodeJS.Timeout;
+
+    function initYT() {
+      if (!window.YT || !window.YT.Player) {
+        timer = setTimeout(initYT, 200);
+        return;
+      }
+
+      if (ytPlayerRef.current) {
+        try {
+          ytPlayerRef.current.loadVideoById(activeVideoId!);
+          if (isPlaying) ytPlayerRef.current.playVideo();
+          return;
+        } catch {
+          // Re-create player if load failed
+        }
+      }
+
+      const container = document.getElementById("pulse-yt-audio-container");
+      if (!container) return;
+
+      ytPlayerRef.current = new window.YT.Player("pulse-yt-audio-container", {
+        videoId: activeVideoId!,
+        playerVars: {
+          autoplay: isPlaying ? 1 : 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          rel: 0,
+          playsinline: 1,
+        },
+        events: {
+          onReady: onPlayerReady,
+          onStateChange: onPlayerStateChange,
+          onError: () => {
+            // If YouTube is blocked, gracefully fall back to HTML5 preview
+            setIsFullSongActive(false);
+            if (audioRef.current && isPlaying) {
+              audioRef.current.play().catch(() => {});
+            }
+          },
+        },
+      });
+    }
+
+    initYT();
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [activeVideoId, onPlayerReady, onPlayerStateChange, isPlaying]);
+
+  // Timer loop for time tracking when YouTube is active
+  useEffect(() => {
+    if (!isFullSongActive || !isPlaying) return;
+
+    const interval = setInterval(() => {
+      if (ytPlayerRef.current && isYtReadyRef.current) {
+        try {
+          const curr = ytPlayerRef.current.getCurrentTime();
+          if (curr !== undefined && !isNaN(curr)) {
+            setCurrentTime(curr);
+          }
+          const dur = ytPlayerRef.current.getDuration();
+          if (dur && dur > 10) {
+            setDuration(Math.floor(dur));
+          }
+        } catch {}
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [isFullSongActive, isPlaying]);
+
+  // Dynamically resolve full YouTube stream & Apple Music artwork
   useEffect(() => {
     if (!currentTrack) {
       setActiveAudioSrc(null);
       setResolvedArtwork(null);
+      setActiveVideoId(null);
+      setIsFullSongActive(false);
       return;
     }
 
     let isMounted = true;
+    setCurrentTime(0);
 
-    // If already has a genuine non-SoundHelix previewUrl, use it directly
-    if (currentTrack.previewUrl && !currentTrack.previewUrl.includes("soundhelix")) {
-      setActiveAudioSrc(currentTrack.previewUrl);
-      setResolvedArtwork(currentTrack.imageUrl || null);
-      return;
-    }
+    // 1. Resolve Full Song from YouTube
+    const fullQuery = `${currentTrack.title} ${currentTrack.artist || ""}`.trim();
+    fetch(`/api/music/full-stream?q=${encodeURIComponent(fullQuery)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isMounted) return;
+        if (data?.videoId) {
+          setActiveVideoId(data.videoId);
+          setIsFullSongActive(true);
+        } else {
+          setIsFullSongActive(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setIsFullSongActive(false);
+      });
 
-    // Query Apple Music catalog for this specific song's authentic 30s studio clip
+    // 2. Resolve High-Res Artwork and Audio fallback
     const isIndian = /hindi|bollywood|desi|punjabi|india|arijit/i.test(
       `${currentTrack.title} ${currentTrack.artist || ""}`
     );
@@ -104,30 +273,43 @@ export const InAppAudioPlayer: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [currentTrack?.id, currentTrack?.title, currentTrack?.artist, currentTrack?.previewUrl]);
+  }, [currentTrack?.id, currentTrack?.title, currentTrack?.artist]);
 
-  // Sync playback state and audio source with <audio> element
+  // Sync playback state across both YouTube and HTML5
   useEffect(() => {
-    if (!audioRef.current || !activeAudioSrc) return;
-
-    if (audioRef.current.src !== activeAudioSrc) {
-      audioRef.current.src = activeAudioSrc;
-      audioRef.current.load();
+    if (isFullSongActive && ytPlayerRef.current && isYtReadyRef.current) {
+      try {
+        if (isPlaying) {
+          ytPlayerRef.current.playVideo();
+          if (audioRef.current) audioRef.current.pause();
+        } else {
+          ytPlayerRef.current.pauseVideo();
+        }
+      } catch {}
+    } else if (!isFullSongActive && audioRef.current && activeAudioSrc) {
+      if (audioRef.current.src !== activeAudioSrc) {
+        audioRef.current.src = activeAudioSrc;
+        audioRef.current.load();
+      }
+      if (isPlaying) {
+        audioRef.current.play().catch(() => {});
+      } else {
+        audioRef.current.pause();
+      }
     }
+  }, [isPlaying, isFullSongActive, activeAudioSrc]);
 
-    if (isPlaying) {
-      audioRef.current.play().catch(() => {});
-    } else {
-      audioRef.current.pause();
-    }
-  }, [isPlaying, activeAudioSrc]);
-
-  // Sync volume
+  // Sync volume across both engines
   useEffect(() => {
+    if (isFullSongActive && ytPlayerRef.current && isYtReadyRef.current) {
+      try {
+        ytPlayerRef.current.setVolume(isMuted ? 0 : volume * 100);
+      } catch {}
+    }
     if (audioRef.current) {
       audioRef.current.volume = isMuted ? 0 : volume;
     }
-  }, [volume, isMuted]);
+  }, [volume, isMuted, isFullSongActive]);
 
   if (!currentTrack) return null;
 
@@ -138,7 +320,7 @@ export const InAppAudioPlayer: React.FC = () => {
       : null;
 
   const handleTimeUpdate = () => {
-    if (audioRef.current) {
+    if (!isFullSongActive && audioRef.current) {
       setCurrentTime(audioRef.current.currentTime);
       if (audioRef.current.duration && !isNaN(audioRef.current.duration)) {
         setDuration(audioRef.current.duration);
@@ -148,9 +330,13 @@ export const InAppAudioPlayer: React.FC = () => {
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTime = parseFloat(e.target.value);
-    if (audioRef.current) {
+    setCurrentTime(newTime);
+    if (isFullSongActive && ytPlayerRef.current && isYtReadyRef.current) {
+      try {
+        ytPlayerRef.current.seekTo(newTime, true);
+      } catch {}
+    } else if (audioRef.current) {
       audioRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
     }
   };
 
@@ -167,15 +353,21 @@ export const InAppAudioPlayer: React.FC = () => {
       aria-label="In-App Audio Player"
       className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[70] w-[95%] max-w-2xl bg-white/95 dark:bg-stone-900/95 text-stone-900 dark:text-stone-100 backdrop-blur-2xl border border-stone-200/80 dark:border-stone-800/80 rounded-3xl p-3 sm:px-4 shadow-2xl animate-in slide-in-from-bottom-5 duration-300"
     >
+      {/* Invisible YouTube Player Container ensuring 100% full songs without audio cutoff */}
+      <div className="w-1 h-1 overflow-hidden opacity-0 pointer-events-none absolute -bottom-10 -right-10">
+        <div id="pulse-yt-audio-container" />
+      </div>
+
+      {/* Fallback HTML5 Audio Element */}
       <audio
         ref={audioRef}
         src={audioSource}
         onTimeUpdate={handleTimeUpdate}
         onEnded={() => {
-          dispatch(nextTrack());
+          if (!isFullSongActive) dispatch(nextTrack());
         }}
         onError={() => {
-          if (audioRef.current) {
+          if (!isFullSongActive && audioRef.current) {
             const altSource =
               AUTHENTIC_AUDIO_STREAMS[
                 (playlistIndex + 1) % AUTHENTIC_AUDIO_STREAMS.length
@@ -183,8 +375,6 @@ export const InAppAudioPlayer: React.FC = () => {
             if (audioRef.current.src !== altSource) {
               audioRef.current.src = altSource;
               if (isPlaying) audioRef.current.play().catch(() => {});
-            } else {
-              dispatch(nextTrack());
             }
           }
         }}
@@ -220,9 +410,17 @@ export const InAppAudioPlayer: React.FC = () => {
                 {currentTrack.title}
               </h4>
             </div>
-            <p className="text-[11px] text-stone-500 dark:text-stone-400 truncate mt-0.5">
-              {currentTrack.artist}
-            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <p className="text-[11px] text-stone-500 dark:text-stone-400 truncate">
+                {currentTrack.artist}
+              </p>
+              {isFullSongActive && (
+                <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded-full border border-emerald-500/20 shrink-0">
+                  Full Song
+                </span>
+              )}
+            </div>
+
             {nextTrackItem && (
               <button
                 type="button"
@@ -231,7 +429,7 @@ export const InAppAudioPlayer: React.FC = () => {
                 title={`Up next: ${nextTrackItem.title}`}
               >
                 <span>Up next:</span>
-                <span className="truncate max-w-[100px]">{nextTrackItem.title}</span>
+                <span className="truncate max-w-[90px]">{nextTrackItem.title}</span>
               </button>
             )}
           </div>
@@ -279,7 +477,7 @@ export const InAppAudioPlayer: React.FC = () => {
               aria-label="Playback position"
               min="0"
               max={duration || 30}
-              step="0.1"
+              step="1"
               value={currentTime}
               onChange={handleSeek}
               className="w-full h-1 bg-stone-200 dark:bg-stone-700 rounded-lg appearance-none cursor-pointer accent-stone-900 dark:accent-white"

@@ -1726,6 +1726,32 @@ app.post('/api/ai/mood-playlist', async (req, res) => {
 });
 
 
+// 6.5 Full Song YouTube Stream Resolver
+app.get('/api/music/full-stream', async (req, res) => {
+  try {
+    const q = req.query.q;
+    if (!q) return res.status(400).json({ success: false, error: 'Query required' });
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(`${q} official audio`)}`;
+    const ytRes = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (ytRes.ok) {
+      const html = await ytRes.text();
+      const match = html.match(/\/watch\?v=([a-zA-Z0-9_-]{11})/);
+      if (match && match[1]) {
+        return res.json({ success: true, videoId: match[1] });
+      }
+    }
+    res.status(404).json({ success: false, error: 'Not found' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed' });
+  }
+});
+
 // 7. Health & Status
 app.get('/health', (req, res) => {
   res.json({
