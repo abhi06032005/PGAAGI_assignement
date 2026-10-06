@@ -1667,8 +1667,8 @@ async function fetchLiveMoodTracks(query, moodKey = 'focus') {
 
 app.post('/api/ai/mood-playlist', async (req, res) => {
   try {
-    const { moodText = '', vibeChip = '' } = req.body || {};
-    const text = (moodText || vibeChip || 'late night chill vibes').trim();
+    const { prompt = '', moodText = '', vibeChip = '' } = req.body || {};
+    const text = (prompt || moodText || vibeChip || 'late night chill vibes').trim();
 
     // 1. Use Groq to deeply understand the prompt
     let sentiment = await analyzeWithGroq(text);
