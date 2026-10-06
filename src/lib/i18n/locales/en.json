@@ -1,0 +1,106 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "trending": "Trending",
+    "favorites": "Favorites",
+    "discover": "Discover",
+    "settings": "Settings",
+    "profile": "Profile",
+    "logout": "Log Out",
+    "login": "Log In"
+  },
+  "search": {
+    "placeholder": "Search across news, social, movies...",
+    "noResults": "No results found for",
+    "clear": "Clear search"
+  },
+  "greeting": {
+    "welcome": "Welcome back",
+    "subtitle": "Here is what's happening in your universe today."
+  },
+  "feed": {
+    "title": "Your daily mix",
+    "all": "All",
+    "news": "News",
+    "recommendations": "Movies & Shows",
+    "social": "Social",
+    "music": "Music",
+    "empty": "No stories found matching your current filter.",
+    "loadMore": "Loading more content...",
+    "endOfFeed": "You're all caught up!",
+    "retry": "Try again",
+    "error": "Failed to load feed items."
+  },
+  "trending": {
+    "title": "Trending Stories",
+    "subtitle": "Hot topics and breaking updates right now",
+    "all": "All Trends",
+    "forYou": "For You"
+  },
+  "favorites": {
+    "title": "Saved Favorites",
+    "subtitle": "Articles and media saved for quick reading",
+    "empty": "No favorites saved yet. Click the heart icon on any story to save it here!"
+  },
+  "spotify": {
+    "connect": "Connect Spotify",
+    "connected": "Connected to Spotify",
+    "nowPlaying": "Now Playing",
+    "musicForYou": "Music For You",
+    "topArtists": "Based on top artist catalog and curated search"
+  },
+  "settings": {
+    "title": "User Preferences",
+    "theme": "Theme",
+    "language": "Language",
+    "categories": "Preferred Categories",
+    "compact": "Compact Mode",
+    "close": "Close"
+  },
+  "studio": {
+    "yourDailyEdit": "YOUR DAILY EDIT",
+    "customize": "Customize",
+    "madeForYou": "A WORLD CURATED FOR YOU",
+    "lessNoise": "Less noise.",
+    "moreYou": "More you.",
+    "heroDescription": "The stories, sounds, and ideas worth making a little time for.",
+    "explore": "Explore your feed",
+    "inSpotlight": "In the spotlight",
+    "findingStories": "Finding your next great read…",
+    "readStory": "Read the story",
+    "workspace": "Workspace",
+    "overview": "Overview",
+    "yourChannels": "Your channels",
+    "makeItYours": "A feed that feels like you.",
+    "tuneInterests": "Choose what you love. We’ll bring the good stuff.",
+    "editInterests": "Edit your interests",
+    "onYourRadar": "On your radar",
+    "yourInterests": "Your interests",
+    "interestsHint": "A little more of what you love. Fine-tune your feed anytime.",
+    "forLater": "The reading room",
+    "saveHint": "Found something good? Save it here for a slower moment.",
+    "openCollection": "Open your collection",
+    "stayCurious": "Stay curious.",
+    "somethingGood": "There’s always something good.",
+    "demoNote": "Live providers when configured. Curated sample content is used when a source is unavailable. Social updates are simulated.",
+    "stories": "stories",
+    "mixDescription": "A little of everything you love, all in one place.",
+    "resetOrder": "Reset order",
+    "dragHint": "Drag cards to reorder",
+    "allFeeds": "All feeds",
+    "feedError": "Feed Loading Error",
+    "trySearch": "Try another search or broaden your filters.",
+    "resetFilters": "Reset Filters",
+    "loadMore": "Load more"
+  },
+  "categories": {
+    "all": "All topics",
+    "technology": "Technology",
+    "finance": "Finance",
+    "sports": "Sports",
+    "entertainment": "Entertainment",
+    "health": "Health",
+    "science": "Science",
+    "space": "Space"
+  }
+}
