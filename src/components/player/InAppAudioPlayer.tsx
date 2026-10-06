@@ -21,6 +21,7 @@ import {
   Sparkles,
   SkipBack,
   SkipForward,
+  Loader2,
 } from "lucide-react";
 import { SafeImage } from "@/components/ui/SafeImage";
 
@@ -59,6 +60,7 @@ interface YTPlayerInstance {
   getCurrentTime: () => number;
   getDuration: () => number;
   loadVideoById: (videoId: string) => void;
+  cueVideoById?: (videoId: string) => void;
   destroy: () => void;
 }
 
@@ -94,6 +96,7 @@ export const InAppAudioPlayer: React.FC = () => {
   const [activeAudioSrc, setActiveAudioSrc] = useState<string | null>(null);
   const [resolvedArtwork, setResolvedArtwork] = useState<string | null>(null);
   const [isFullSongActive, setIsFullSongActive] = useState(false);
+  const [isResolvingFullSong, setIsResolvingFullSong] = useState(true);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
 
   // Load YouTube Iframe API once
@@ -116,10 +119,10 @@ export const InAppAudioPlayer: React.FC = () => {
     if (dur && dur > 10) {
       setDuration(Math.floor(dur));
     }
+    // Mute and pause any HTML5 audio immediately
+    if (audioRef.current) audioRef.current.pause();
     if (isPlaying) {
       event.target.playVideo();
-      // Mute the fallback HTML5 audio so only full YouTube audio plays
-      if (audioRef.current) audioRef.current.pause();
     }
   }, [isMuted, volume, isPlaying]);
 
@@ -144,11 +147,23 @@ export const InAppAudioPlayer: React.FC = () => {
 
       if (ytPlayerRef.current) {
         try {
-          ytPlayerRef.current.loadVideoById(activeVideoId!);
-          if (isPlaying) ytPlayerRef.current.playVideo();
+          if (isPlaying) {
+            ytPlayerRef.current.loadVideoById(activeVideoId!);
+          } else {
+            if (ytPlayerRef.current.cueVideoById) {
+              ytPlayerRef.current.cueVideoById(activeVideoId!);
+            } else {
+              ytPlayerRef.current.loadVideoById(activeVideoId!);
+              ytPlayerRef.current.pauseVideo();
+            }
+          }
           return;
         } catch {
           // Re-create player if load failed
+          try {
+            ytPlayerRef.current.destroy();
+          } catch {}
+          ytPlayerRef.current = null;
         }
       }
 
@@ -172,6 +187,7 @@ export const InAppAudioPlayer: React.FC = () => {
           onError: () => {
             // If YouTube is blocked, gracefully fall back to HTML5 preview
             setIsFullSongActive(false);
+            setIsResolvingFullSong(false);
             if (audioRef.current && isPlaying) {
               audioRef.current.play().catch(() => {});
             }
@@ -216,27 +232,56 @@ export const InAppAudioPlayer: React.FC = () => {
       setResolvedArtwork(null);
       setActiveVideoId(null);
       setIsFullSongActive(false);
+      setIsResolvingFullSong(false);
+      if (audioRef.current) audioRef.current.pause();
+      if (ytPlayerRef.current && isYtReadyRef.current) {
+        try {
+          ytPlayerRef.current.pauseVideo();
+        } catch {}
+      }
       return;
     }
 
     let isMounted = true;
     setCurrentTime(0);
+    setIsResolvingFullSong(true);
+    setActiveAudioSrc(null);
+
+    // Pause any active audio immediately so no preview or old audio plays prematurely
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    if (ytPlayerRef.current && isYtReadyRef.current) {
+      try {
+        ytPlayerRef.current.pauseVideo();
+      } catch {}
+    }
 
     // 1. Resolve Full Song from YouTube
     const fullQuery = `${currentTrack.title} ${currentTrack.artist || ""}`.trim();
-    fetch(`/api/music/full-stream?q=${encodeURIComponent(fullQuery)}`)
+    const abortController = new AbortController();
+    const timerId = setTimeout(() => abortController.abort(), 6000);
+
+    fetch(`/api/music/full-stream?q=${encodeURIComponent(fullQuery)}`, {
+      signal: abortController.signal,
+    })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!isMounted) return;
+        clearTimeout(timerId);
         if (data?.videoId) {
           setActiveVideoId(data.videoId);
           setIsFullSongActive(true);
         } else {
           setIsFullSongActive(false);
         }
+        setIsResolvingFullSong(false);
       })
       .catch(() => {
-        if (isMounted) setIsFullSongActive(false);
+        if (isMounted) {
+          setIsFullSongActive(false);
+          setIsResolvingFullSong(false);
+        }
       });
 
     // 2. Resolve High-Res Artwork and Audio fallback
@@ -272,11 +317,21 @@ export const InAppAudioPlayer: React.FC = () => {
 
     return () => {
       isMounted = false;
+      clearTimeout(timerId);
+      abortController.abort();
     };
   }, [currentTrack?.id, currentTrack?.title, currentTrack?.artist]);
 
   // Sync playback state across both YouTube and HTML5
   useEffect(() => {
+    // If still resolving the full song, do NOT start the HTML5 audio preview!
+    if (isResolvingFullSong) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      return;
+    }
+
     if (isFullSongActive && ytPlayerRef.current && isYtReadyRef.current) {
       try {
         if (isPlaying) {
@@ -297,7 +352,7 @@ export const InAppAudioPlayer: React.FC = () => {
         audioRef.current.pause();
       }
     }
-  }, [isPlaying, isFullSongActive, activeAudioSrc]);
+  }, [isPlaying, isFullSongActive, isResolvingFullSong, activeAudioSrc]);
 
   // Sync volume across both engines
   useEffect(() => {
@@ -414,11 +469,15 @@ export const InAppAudioPlayer: React.FC = () => {
               <p className="text-[11px] text-stone-500 dark:text-stone-400 truncate">
                 {currentTrack.artist}
               </p>
-              {isFullSongActive && (
+              {isFullSongActive ? (
                 <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded-full border border-emerald-500/20 shrink-0">
                   Full Song
                 </span>
-              )}
+              ) : isResolvingFullSong ? (
+                <span className="text-[9px] font-medium text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-800 px-1.5 py-0.2 rounded-full shrink-0 animate-pulse">
+                  Connecting...
+                </span>
+              ) : null}
             </div>
 
             {nextTrackItem && (
@@ -453,7 +512,9 @@ export const InAppAudioPlayer: React.FC = () => {
               className="w-9 h-9 rounded-full bg-stone-900 dark:bg-white text-white dark:text-stone-900 flex items-center justify-center hover:scale-105 transition-transform shadow-xs cursor-pointer"
               aria-label={isPlaying ? "Pause" : "Play"}
             >
-              {isPlaying ? (
+              {isResolvingFullSong ? (
+                <Loader2 className="w-4 h-4 animate-spin text-current" />
+              ) : isPlaying ? (
                 <Pause className="w-4 h-4 fill-current" />
               ) : (
                 <Play className="w-4 h-4 fill-current ml-0.5" />
