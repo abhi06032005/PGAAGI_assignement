@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "concurrently -k -n \"backend,frontend\" -c \"blue,green\" \"node server/index.js\" \"next dev\"",
     "dev:backend": "node server/index.js",
+    "start:backend": "node server/index.js",
     "dev:frontend": "next dev",
     "build": "next build",
     "start": "next start",

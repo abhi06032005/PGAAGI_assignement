@@ -3,11 +3,12 @@ const cors = require('cors');
 const path = require('path');
 const dotenv = require('dotenv');
 
-// Load environment variables from .env.local
+// Load environment variables (.env.local or standard .env)
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config();
 
 const app = express();
-const PORT = process.env.BACKEND_PORT || 5000;
+const PORT = process.env.PORT || process.env.BACKEND_PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
