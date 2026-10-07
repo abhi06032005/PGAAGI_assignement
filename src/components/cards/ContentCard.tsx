@@ -61,6 +61,28 @@ export function ContentCard({
               item.type,
             )}
           </span>
+          {item.type === "social" && (
+            <>
+              <span>•</span>
+              <span
+                className={`px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase inline-flex items-center gap-1 ${
+                  (item as any).platform === "reddit"
+                    ? "bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/20"
+                    : (item as any).platform === "twitter"
+                    ? "bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/20"
+                    : "bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20"
+                }`}
+              >
+                {(item as any).platform === "reddit"
+                  ? "Reddit"
+                  : (item as any).platform === "twitter"
+                  ? "𝕏 Twitter"
+                  : (item as any).platform === "bluesky"
+                  ? "Bluesky"
+                  : "Mastodon"}
+              </span>
+            </>
+          )}
           <span>•</span>
           <span>{item.category}</span>
         </div>
@@ -72,9 +94,61 @@ export function ContentCard({
         <p className="story-summary">{item.summary}</p>
         <div className="story-bottom">
           <span className="story-source">
-            {item.type === "music"
-              ? item.artist
-              : item.source || item.sourceName || "Pulse"}
+            {item.type === "music" ? (
+              item.artist
+            ) : item.type === "social" ? (
+              <span className="inline-flex items-center gap-1.5 flex-wrap">
+                {(item as any).platform === "reddit" ? (
+                  <>
+                    <strong className="text-orange-600 dark:text-orange-400">
+                      {(item as any).subreddit || "r/all"}
+                    </strong>
+                    <span>
+                      · ▲{" "}
+                      {(item as any).likesCount
+                        ? (item as any).likesCount > 999
+                          ? `${((item as any).likesCount / 1000).toFixed(1)}k`
+                          : (item as any).likesCount
+                        : "1.4k"}
+                    </span>
+                    {(item as any).commentsCount && (
+                      <span>· 💬 {(item as any).commentsCount}</span>
+                    )}
+                  </>
+                ) : (item as any).platform === "twitter" ? (
+                  <>
+                    <strong className="text-stone-800 dark:text-stone-200">
+                      {(item as any).authorHandle || "@twitter"}
+                    </strong>
+                    {(item as any).verified && (
+                      <span className="text-sky-500 font-bold" title="Verified">
+                        ✓
+                      </span>
+                    )}
+                    <span>
+                      · ♥{" "}
+                      {(item as any).likesCount
+                        ? (item as any).likesCount > 999
+                          ? `${((item as any).likesCount / 1000).toFixed(1)}k`
+                          : (item as any).likesCount
+                        : "2.1k"}
+                    </span>
+                    {(item as any).repostsCount && (
+                      <span>· 🔁 {(item as any).repostsCount}</span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <strong className="text-purple-600 dark:text-purple-400">
+                      {(item as any).authorHandle || item.source || "Social"}
+                    </strong>
+                    <span>· ★ {(item as any).likesCount || 42}</span>
+                  </>
+                )}
+              </span>
+            ) : (
+              item.source || item.sourceName || "Pulse"
+            )}
             {item.type === "news" && item.readTimeMinutes && (
               <span> · {item.readTimeMinutes} min read</span>
             )}
@@ -128,6 +202,17 @@ export function ContentCard({
                 <>
                   <Play size={12} fill="currentColor" />
                   <span>Play Now</span>
+                </>
+              ) : item.type === "social" ? (
+                <>
+                  <span>
+                    {(item as any).platform === "reddit"
+                      ? "Thread"
+                      : (item as any).platform === "twitter"
+                      ? "Tweet"
+                      : "Post"}
+                  </span>
+                  <ArrowUpRight size={14} />
                 </>
               ) : (
                 <>

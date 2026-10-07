@@ -133,8 +133,10 @@ export const ItemDetailModal: React.FC = () => {
           )}
           {item.type === 'social' && (
             <>
-              <span>• Posted by: <strong className="text-stone-700 dark:text-stone-300">{item.authorName} ({item.authorHandle})</strong></span>
-              <span>• Platform: {item.platform}</span>
+              <span>• Platform: <strong className="uppercase text-stone-800 dark:text-stone-200">{item.platform === 'twitter' ? '𝕏 Twitter' : item.platform}</strong></span>
+              {(item as any).subreddit && <span>• Subreddit: <strong className="text-orange-600 dark:text-orange-400">{(item as any).subreddit}</strong></span>}
+              <span>• Author: <strong className="text-stone-700 dark:text-stone-300">{item.authorName} ({item.authorHandle})</strong></span>
+              <span>• Engagement: {(item.likesCount || 0).toLocaleString()} {item.platform === 'reddit' ? 'upvotes' : 'likes'}{(item.commentsCount ? ` · ${item.commentsCount.toLocaleString()} comments` : '')}</span>
             </>
           )}
           {item.type === 'music' && (
@@ -160,7 +162,15 @@ export const ItemDetailModal: React.FC = () => {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-stone-900 dark:bg-white text-white dark:text-stone-900 font-bold text-xs transition-all shadow-md"
             >
-              <span>Visit Official Source</span>
+              <span>
+                {item.type === 'social'
+                  ? item.platform === 'reddit'
+                    ? 'Open Reddit Thread'
+                    : item.platform === 'twitter'
+                    ? 'Open on 𝕏 Twitter'
+                    : 'Open Post'
+                  : 'Visit Official Source'}
+              </span>
               <ExternalLink className="w-4 h-4" />
             </a>
           </div>

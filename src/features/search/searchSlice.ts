@@ -1,6 +1,8 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Category, ContentType, NewsRegion } from '@/types';
 
+export type SocialPlatformFilter = 'all' | 'reddit' | 'twitter' | 'mastodon' | 'bluesky';
+
 export interface SearchState {
   query: string;
   debouncedQuery: string;
@@ -8,6 +10,7 @@ export interface SearchState {
   selectedType: ContentType | 'all';
   selectedNewsRegion: NewsRegion;
   customNewsTopic: string;
+  selectedSocialPlatform: SocialPlatformFilter;
 }
 
 const initialState: SearchState = {
@@ -17,6 +20,7 @@ const initialState: SearchState = {
   selectedType: 'all',
   selectedNewsRegion: 'all',
   customNewsTopic: '',
+  selectedSocialPlatform: 'all',
 };
 
 export const searchSlice = createSlice({
@@ -41,6 +45,9 @@ export const searchSlice = createSlice({
     setCustomNewsTopic: (state, action: PayloadAction<string>) => {
       state.customNewsTopic = action.payload;
     },
+    setSelectedSocialPlatform: (state, action: PayloadAction<SocialPlatformFilter>) => {
+      state.selectedSocialPlatform = action.payload;
+    },
     resetSearch: (state) => {
       state.query = '';
       state.debouncedQuery = '';
@@ -48,6 +55,7 @@ export const searchSlice = createSlice({
       state.selectedType = 'all';
       state.selectedNewsRegion = 'all';
       state.customNewsTopic = '';
+      state.selectedSocialPlatform = 'all';
     },
   },
 });
@@ -59,6 +67,7 @@ export const {
   setSelectedType,
   setSelectedNewsRegion,
   setCustomNewsTopic,
+  setSelectedSocialPlatform,
   resetSearch,
 } = searchSlice.actions;
 

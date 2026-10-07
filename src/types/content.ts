@@ -66,7 +66,7 @@ export interface RecommendationItem extends NormalizedContentItem {
 
 export interface SocialItem extends NormalizedContentItem {
   type: 'social';
-  platform: 'mastodon' | 'twitter' | 'threads' | 'bluesky' | 'instagram';
+  platform: 'mastodon' | 'twitter' | 'threads' | 'bluesky' | 'instagram' | 'reddit';
   authorName: string;
   authorHandle: string;
   authorAvatar: string;
@@ -75,6 +75,7 @@ export interface SocialItem extends NormalizedContentItem {
   repostsCount: number;
   commentsCount: number;
   hashtags: string[];
+  subreddit?: string;
 }
 
 export interface MusicItem extends NormalizedContentItem {

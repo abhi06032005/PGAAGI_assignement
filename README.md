@@ -86,7 +86,10 @@ Browser tests intercept provider responses for repeatability and exercise search
 
 Deploy this as a Node-compatible Next.js application (for example Vercel), not a static export: route handlers and the SSE endpoint need a server. Add provider keys and a unique `NEXTAUTH_SECRET` through the host's secret settings; set `NEXTAUTH_URL` to the deployment URL. Serverless hosts may periodically end SSE requests; the browser reconnects automatically.
 
-Repository: https://github.com/abhi06032005/PGAAGI_assignement. A hosting project must still be configured for a public live URL. Never commit `.env.local`, generated reports, dependencies, or unrelated installers. The accompanying `docs/WALKTHROUGH.md` provides the reviewer demonstration script.
+Repository: https://github.com/abhi06032005/PGAAGI_assignement
+Live Deployment: https://pgaagi-assignement.vercel.app/
+
+The accompanying `docs/WALKTHROUGH.md` provides the reviewer demonstration script.
 
 ## Preview and demo
 

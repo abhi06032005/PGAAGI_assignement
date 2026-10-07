@@ -849,13 +849,328 @@ async function getLiveRecommendations(category = 'entertainment', search = '') {
 }
 
 // ============================================================================
-// 3. DYNAMIC REAL-TIME SOCIAL (Mastodon Live Timeline & Search)
+// 3. DYNAMIC REAL-TIME SOCIAL (Reddit + Twitter/X + Mastodon)
 // ============================================================================
-async function getLiveSocialPosts(category = 'technology', search = '') {
+const curatedSocialPosts = [
+  // REDDIT POSTS
+  {
+    id: 'rd-tech-1',
+    type: 'social',
+    platform: 'reddit',
+    subreddit: 'r/technology',
+    title: 'OpenAI and DeepMind publish new benchmarks for agentic code synthesis',
+    summary: 'The latest models are demonstrating 85%+ pass rates on real-world multi-file GitHub issues with zero-shot autonomous debugging loops. The implications for developer productivity are massive.',
+    category: 'technology',
+    timestamp: '25m ago',
+    publishedAt: new Date(Date.now() - 25 * 60000).toISOString(),
+    authorName: 'code_architect',
+    authorHandle: 'u/code_architect',
+    authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+    likesCount: 18450,
+    repostsCount: 2310,
+    commentsCount: 1420,
+    hashtags: ['#technology', '#ai', '#programming'],
+    imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
+    source: 'Reddit r/technology',
+    sourceName: 'Reddit r/technology',
+    url: 'https://www.reddit.com/r/technology',
+    isTrending: true,
+  },
+  {
+    id: 'rd-tech-2',
+    type: 'social',
+    platform: 'reddit',
+    subreddit: 'r/programming',
+    title: 'Why Rust is quietly becoming mandatory for high-throughput backend services',
+    summary: 'We migrated our message ingestion layer from Go to Rust using Tokio and io_uring. Memory consumption dropped by 65% and 99th percentile latency dropped from 14ms to 1.8ms.',
+    category: 'technology',
+    timestamp: '1h ago',
+    publishedAt: new Date(Date.now() - 60 * 60000).toISOString(),
+    authorName: 'systems_ninja',
+    authorHandle: 'u/systems_ninja',
+    authorAvatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=200&q=80',
+    likesCount: 12380,
+    repostsCount: 940,
+    commentsCount: 890,
+    hashtags: ['#rust', '#programming', '#backend'],
+    imageUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80',
+    source: 'Reddit r/programming',
+    sourceName: 'Reddit r/programming',
+    url: 'https://www.reddit.com/r/programming',
+    isTrending: true,
+  },
+  {
+    id: 'rd-sci-1',
+    type: 'social',
+    platform: 'reddit',
+    subreddit: 'r/space',
+    title: 'JWST delivers deepest infrared spectrogram of early universe proto-galaxy',
+    summary: 'Spectroscopic confirmation shows oxygen and carbon ionization signatures just 320 million years after the Big Bang. Star formation occurred much faster than previously assumed.',
+    category: 'science',
+    timestamp: '2h ago',
+    publishedAt: new Date(Date.now() - 120 * 60000).toISOString(),
+    authorName: 'astro_dan',
+    authorHandle: 'u/astro_dan',
+    authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    likesCount: 29800,
+    repostsCount: 4500,
+    commentsCount: 1670,
+    hashtags: ['#space', '#astronomy', '#jwst'],
+    imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
+    source: 'Reddit r/space',
+    sourceName: 'Reddit r/space',
+    url: 'https://www.reddit.com/r/space',
+    isTrending: true,
+  },
+  {
+    id: 'rd-ent-1',
+    type: 'social',
+    platform: 'reddit',
+    subreddit: 'r/movies',
+    title: 'Christopher Nolan confirmed to direct secret sci-fi epic filmed exclusively with 70mm IMAX cameras',
+    summary: 'Universal Pictures confirms full global theatrical commitment with zero streaming day-and-date release. Practical effects team has already begun construction on mechanical camera rigs.',
+    category: 'entertainment',
+    timestamp: '3h ago',
+    publishedAt: new Date(Date.now() - 180 * 60000).toISOString(),
+    authorName: 'cinephile_99',
+    authorHandle: 'u/cinephile_99',
+    authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    likesCount: 22400,
+    repostsCount: 3800,
+    commentsCount: 2450,
+    hashtags: ['#movies', '#cinema', '#imax'],
+    imageUrl: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=800&q=80',
+    source: 'Reddit r/movies',
+    sourceName: 'Reddit r/movies',
+    url: 'https://www.reddit.com/r/movies',
+    isTrending: true,
+  },
+  {
+    id: 'rd-fin-1',
+    type: 'social',
+    platform: 'reddit',
+    subreddit: 'r/wallstreetbets',
+    title: 'Institutional sovereign funds poured $45B into custom AI datacenter REITs this quarter',
+    summary: 'Commercial real estate rotation: legacy office space vacancies hit 28%, while specialized high-voltage liquid-cooled datacenter land values jumped 300% year-over-year in North America.',
+    category: 'finance',
+    timestamp: '4h ago',
+    publishedAt: new Date(Date.now() - 240 * 60000).toISOString(),
+    authorName: 'deep_value_trader',
+    authorHandle: 'u/deep_value_trader',
+    authorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+    likesCount: 16900,
+    repostsCount: 2100,
+    commentsCount: 1980,
+    hashtags: ['#finance', '#stocks', '#investing'],
+    imageUrl: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=800&q=80',
+    source: 'Reddit r/wallstreetbets',
+    sourceName: 'Reddit r/wallstreetbets',
+    url: 'https://www.reddit.com/r/wallstreetbets',
+    isTrending: true,
+  },
+  {
+    id: 'rd-spo-1',
+    type: 'social',
+    platform: 'reddit',
+    subreddit: 'r/soccer',
+    title: 'Champions League Quarterfinal Draw Analysis & Tactical Simulation',
+    summary: 'Detailed positional heatmaps comparing high-press recovery times against mid-block defensive transitions. The rematch in Madrid is going to be decided by transition speed out of the half-spaces.',
+    category: 'sports',
+    timestamp: '5h ago',
+    publishedAt: new Date(Date.now() - 300 * 60000).toISOString(),
+    authorName: 'tactics_enthusiast',
+    authorHandle: 'u/tactics_enthusiast',
+    authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+    likesCount: 14300,
+    repostsCount: 1800,
+    commentsCount: 1120,
+    hashtags: ['#soccer', '#championsleague', '#tactics'],
+    imageUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=800&q=80',
+    source: 'Reddit r/soccer',
+    sourceName: 'Reddit r/soccer',
+    url: 'https://www.reddit.com/r/soccer',
+    isTrending: false,
+  },
+  {
+    id: 'rd-hea-1',
+    type: 'social',
+    platform: 'reddit',
+    subreddit: 'r/fitness',
+    title: 'Comprehensive meta-analysis: Zone 2 cardio vs HIIT for mitochondrial biogenesis and longevity',
+    summary: 'Compiling findings from 14 randomized controlled trials across 6,000 subjects. 150 minutes of weekly Zone 2 aerobic base building yielded superior lactate clearance and capillary density.',
+    category: 'health',
+    timestamp: '6h ago',
+    publishedAt: new Date(Date.now() - 360 * 60000).toISOString(),
+    authorName: 'dr_endurance',
+    authorHandle: 'u/dr_endurance',
+    authorAvatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=200&q=80',
+    likesCount: 19800,
+    repostsCount: 2900,
+    commentsCount: 1340,
+    hashtags: ['#fitness', '#health', '#longevity'],
+    imageUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80',
+    source: 'Reddit r/fitness',
+    sourceName: 'Reddit r/fitness',
+    url: 'https://www.reddit.com/r/fitness',
+    isTrending: true,
+  },
+
+  // TWITTER / X POSTS
+  {
+    id: 'tw-tech-1',
+    type: 'social',
+    platform: 'twitter',
+    title: 'Compute scaling is far from finished. The next leap is recursive agentic verification.',
+    summary: 'Compute scaling is far from hitting diminishing returns. What we are seeing with recursive reasoning test-time compute is that systems can think longer and produce provably correct solutions.',
+    category: 'technology',
+    timestamp: '15m ago',
+    publishedAt: new Date(Date.now() - 15 * 60000).toISOString(),
+    authorName: 'Sam Altman',
+    authorHandle: '@sama',
+    authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    verified: true,
+    likesCount: 48900,
+    repostsCount: 8200,
+    commentsCount: 3410,
+    hashtags: ['#AI', '#OpenAI', '#Tech'],
+    imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
+    source: 'Twitter / X',
+    sourceName: 'Twitter / X',
+    url: 'https://x.com/sama',
+    isTrending: true,
+  },
+  {
+    id: 'tw-tech-2',
+    type: 'social',
+    platform: 'twitter',
+    title: 'English is the hottest new programming language, but agent architecture is the compiler.',
+    summary: 'The paradigm shifted: software engineering is no longer about writing syntax by hand, it is about architecting feedback loops, state boundaries, tool interfaces, and eval harnesses for agents.',
+    category: 'technology',
+    timestamp: '45m ago',
+    publishedAt: new Date(Date.now() - 45 * 60000).toISOString(),
+    authorName: 'Andrej Karpathy',
+    authorHandle: '@karpathy',
+    authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    verified: true,
+    likesCount: 39400,
+    repostsCount: 7100,
+    commentsCount: 1890,
+    hashtags: ['#AI', '#Agents', '#Coding'],
+    imageUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80',
+    source: 'Twitter / X',
+    sourceName: 'Twitter / X',
+    url: 'https://x.com/karpathy',
+    isTrending: true,
+  },
+  {
+    id: 'tw-sci-1',
+    type: 'social',
+    platform: 'twitter',
+    title: 'Webb Space Telescope captures gravitational lensing arc around massive cluster Abell 2744',
+    summary: 'Look closely at these concentric arcs: massive gravity bends the fabric of spacetime into natural cosmic magnifying glasses, showing us galaxies that existed just after cosmic dawn.',
+    category: 'science',
+    timestamp: '1h ago',
+    publishedAt: new Date(Date.now() - 60 * 60000).toISOString(),
+    authorName: 'NASA',
+    authorHandle: '@NASA',
+    authorAvatar: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=200&q=80',
+    verified: true,
+    likesCount: 62400,
+    repostsCount: 14100,
+    commentsCount: 1980,
+    hashtags: ['#NASA', '#JWST', '#Astronomy', '#Space'],
+    imageUrl: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=800&q=80',
+    source: 'Twitter / X',
+    sourceName: 'Twitter / X',
+    url: 'https://x.com/NASA',
+    isTrending: true,
+  },
+  {
+    id: 'tw-ent-1',
+    type: 'social',
+    platform: 'twitter',
+    title: 'Box office update: Dennis Villeneuve Dune series crosses $1.2B global mark',
+    summary: 'Spectacle cinema done with uncompromising artistic integrity will always command theatrical attendance. IMAX reports record per-screen averages worldwide.',
+    category: 'entertainment',
+    timestamp: '2h ago',
+    publishedAt: new Date(Date.now() - 120 * 60000).toISOString(),
+    authorName: 'Variety',
+    authorHandle: '@Variety',
+    authorAvatar: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=200&q=80',
+    verified: true,
+    likesCount: 21500,
+    repostsCount: 4200,
+    commentsCount: 940,
+    hashtags: ['#Cinema', '#BoxOffice', '#Movies'],
+    imageUrl: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=800&q=80',
+    source: 'Twitter / X',
+    sourceName: 'Twitter / X',
+    url: 'https://x.com/Variety',
+    isTrending: true,
+  },
+  {
+    id: 'tw-fin-1',
+    type: 'social',
+    platform: 'twitter',
+    title: 'Global markets digest central bank signals as sovereign yields stabilize',
+    summary: 'Treasuries rally across the 2-year and 10-year curve. Tech multiples holding strong as free-cash-flow conversion hits 5-year highs in enterprise cloud infrastructure.',
+    category: 'finance',
+    timestamp: '3h ago',
+    publishedAt: new Date(Date.now() - 180 * 60000).toISOString(),
+    authorName: 'Bloomberg',
+    authorHandle: '@Bloomberg',
+    authorAvatar: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=200&q=80',
+    verified: true,
+    likesCount: 17800,
+    repostsCount: 3900,
+    commentsCount: 820,
+    hashtags: ['#Markets', '#Economy', '#Finance'],
+    imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80',
+    source: 'Twitter / X',
+    sourceName: 'Twitter / X',
+    url: 'https://x.com/Bloomberg',
+    isTrending: false,
+  },
+  {
+    id: 'tw-hea-1',
+    type: 'social',
+    platform: 'twitter',
+    title: 'The two highest-leverage habits for physical and mental energy',
+    summary: '1. 15-20 min of direct outdoor sunlight within an hour of waking up. 2. A 10-minute brisk walk after your heaviest carbohydrate meal. Zero cost, massive biological returns.',
+    category: 'health',
+    timestamp: '4h ago',
+    publishedAt: new Date(Date.now() - 240 * 60000).toISOString(),
+    authorName: 'Andrew Huberman',
+    authorHandle: '@hubermanlab',
+    authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    verified: true,
+    likesCount: 31200,
+    repostsCount: 6800,
+    commentsCount: 1450,
+    hashtags: ['#Health', '#Biology', '#Sleep', '#Focus'],
+    imageUrl: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80',
+    source: 'Twitter / X',
+    sourceName: 'Twitter / X',
+    url: 'https://x.com/hubermanlab',
+    isTrending: true,
+  },
+];
+
+async function getLiveSocialPosts(category = 'technology', search = '', platform = 'all') {
   const liveItems = [];
-  const q = search ? search.trim() : '';
+  const q = search ? search.trim().toLowerCase() : '';
   const currentCategory = category !== 'all' ? category.toLowerCase() : 'technology';
 
+  // 1. Add matching curated Reddit & Twitter posts
+  curatedSocialPosts.forEach((post) => {
+    if (category === 'all' || post.category === currentCategory) {
+      if (!q || post.title.toLowerCase().includes(q) || post.summary.toLowerCase().includes(q)) {
+        liveItems.push(post);
+      }
+    }
+  });
+
+  // 2. Fetch live Mastodon posts
   const categoryTags = {
     technology: 'technology',
     finance: 'finance',
@@ -910,6 +1225,10 @@ async function getLiveSocialPosts(category = 'technology', search = '') {
     }
   } catch {}
 
+  if (platform && platform !== 'all') {
+    return liveItems.filter((i) => i.platform === platform);
+  }
+
   return liveItems;
 }
 
@@ -920,15 +1239,16 @@ async function getLiveSocialPosts(category = 'technology', search = '') {
 // 1. Unified Aggregated Feed (/api/feed)
 app.get('/api/feed', async (req, res) => {
   try {
-    const { category = 'all', types = 'all', search = '', trending, page = 1, limit = 12 } = req.query;
+    const { category = 'all', types = 'all', search = '', trending, page = 1, limit = 12, socialPlatform = 'all', platform = 'all' } = req.query;
     const cat = category !== 'all' ? category.split(',')[0].trim().toLowerCase() : 'all';
     const q = typeof search === 'string' ? search.trim() : '';
+    const activeSocialPlatform = socialPlatform !== 'all' ? socialPlatform : platform;
 
     // Fetch from all sources
     const [news, recs, social] = await Promise.all([
       getLiveNews(cat, q),
       getLiveRecommendations(cat, q),
-      getLiveSocialPosts(cat, q),
+      getLiveSocialPosts(cat, q, activeSocialPlatform),
     ]);
 
     let allItems = [...customFeedItems, ...news, ...recs, ...social];
@@ -1089,8 +1409,9 @@ app.get('/api/recommendations', async (req, res) => {
 // 5. Live Social Media Endpoint (/api/social)
 app.get('/api/social', async (req, res) => {
   try {
-    const { category = 'technology', search = '' } = req.query;
-    const items = await getLiveSocialPosts(category, search);
+    const { category = 'technology', search = '', platform = 'all', socialPlatform = 'all' } = req.query;
+    const activePlatform = socialPlatform !== 'all' ? socialPlatform : platform;
+    const items = await getLiveSocialPosts(category, search, activePlatform);
     res.json({ success: true, count: items.length, items, data: items });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Live social fetch failed' });

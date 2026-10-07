@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
     const search = searchParams.get('search')?.toLowerCase() || '';
+    const platform = searchParams.get('platform') || searchParams.get('socialPlatform');
 
     let items = [...mockSocialPosts];
 
@@ -13,8 +14,12 @@ export async function GET(request: NextRequest) {
       items = items.filter((item) => item.category === category);
     }
 
+    if (platform && platform !== 'all') {
+      items = items.filter((item) => item.platform === platform);
+    }
+
     if (search) {
-      items = items.filter((item) => item.title.toLowerCase().includes(search));
+      items = items.filter((item) => item.title.toLowerCase().includes(search) || item.summary.toLowerCase().includes(search));
     }
 
     return NextResponse.json({

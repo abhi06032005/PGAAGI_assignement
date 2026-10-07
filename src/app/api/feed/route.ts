@@ -51,6 +51,8 @@ export async function GET(request: NextRequest) {
   const rawRegion = p.get("region");
   const region = (rawRegion === "india" || rawRegion === "international" || rawRegion === "custom") ? rawRegion : "all";
   const customTopic = (p.get("customTopic") || "").slice(0, 100);
+  const rawSocialPlatform = p.get("socialPlatform") || p.get("platform");
+  const socialPlatform = (rawSocialPlatform === "reddit" || rawSocialPlatform === "twitter" || rawSocialPlatform === "mastodon" || rawSocialPlatform === "bluesky") ? rawSocialPlatform : "all";
 
   try {
     const result = await getAggregatedFeed({
@@ -58,6 +60,7 @@ export async function GET(request: NextRequest) {
       type,
       region,
       customTopic,
+      socialPlatform,
       page,
       limit,
       search: (p.get("search") || "").slice(0, 200),

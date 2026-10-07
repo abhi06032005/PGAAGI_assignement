@@ -11,6 +11,7 @@ interface Options {
   search?: string;
   region?: NewsRegion;
   customTopic?: string;
+  socialPlatform?: string;
   page?: number;
   limit?: number;
   activeVibe?: VibeLabel;
@@ -23,6 +24,7 @@ export async function getAggregatedFeed({
   search = "",
   region = "all",
   customTopic = "",
+  socialPlatform = "all",
   page = 1,
   limit = 12,
   activeVibe = "Chill",
@@ -40,7 +42,7 @@ export async function getAggregatedFeed({
       ),
     ).then((groups) => groups.flat()),
     fetchTmdbRecommendations(),
-    fetchSocialPosts("technology"),
+    fetchSocialPosts(categories[0] || "technology"),
     fetchMusicRecommendations(spotifyAccessToken),
   ]);
   if (results.every((r) => r.status === "rejected"))
@@ -50,7 +52,7 @@ export async function getAggregatedFeed({
   );
   const unique = Array.from(new Map(combined.map((i) => [i.id, i])).values());
   const q = search.trim().toLowerCase();
-  const filtered = unique.filter(
+  let filtered = unique.filter(
     (i) =>
       (!categories.length || categories.includes(i.category)) &&
       (!types.length || types.includes(i.type)) &&
@@ -60,6 +62,12 @@ export async function getAggregatedFeed({
           .toLowerCase()
           .includes(q)),
   );
+  if (socialPlatform && socialPlatform !== "all") {
+    filtered = filtered.filter((i) => {
+      if (i.type !== "social") return true;
+      return (i as any).platform === socialPlatform;
+    });
+  }
   filtered.sort((a, b) =>
     trending
       ? Number(!!b.isTrending) - Number(!!a.isTrending)

@@ -21,8 +21,9 @@ export const selectFilteredFeedItems = createSelector(
     (state: RootState) => state.search.selectedType,
     (state: RootState) => state.search.selectedNewsRegion,
     (state: RootState) => state.search.customNewsTopic,
+    (state: RootState) => state.search.selectedSocialPlatform,
   ],
-  (items, query, category, type, newsRegion, customNewsTopic) => {
+  (items, query, category, type, newsRegion, customNewsTopic, socialPlatform) => {
     return items.filter((item: ContentItem) => {
       // Category filter
       if (category !== 'all' && item.category !== category) {
@@ -31,6 +32,13 @@ export const selectFilteredFeedItems = createSelector(
       // Type filter
       if (type !== 'all' && item.type !== type) {
         return false;
+      }
+      // Social Platform filter
+      if (item.type === 'social' && socialPlatform && socialPlatform !== 'all') {
+        const itemPlatform = (item as any).platform;
+        if (itemPlatform !== socialPlatform) {
+          return false;
+        }
       }
       // News Region filter
       if (item.type === 'news' && newsRegion && newsRegion !== 'all') {

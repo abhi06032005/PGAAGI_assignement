@@ -8,6 +8,7 @@ import {
   Compass,
   Sliders,
   Newspaper,
+  Share2,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchFeed } from "../feedThunks";
@@ -20,6 +21,7 @@ import {
   setDebouncedQuery,
   setSelectedNewsRegion,
   setCustomNewsTopic,
+  setSelectedSocialPlatform,
 } from "@/features/search/searchSlice";
 import { selectFilteredFeedItems } from "../selectors";
 import { FeedSkeletonList } from "@/components/ui/Skeleton";
@@ -58,6 +60,7 @@ export function FeedSection() {
     selectedType,
     selectedNewsRegion,
     customNewsTopic,
+    selectedSocialPlatform,
   } = useAppSelector((s) => s.search);
 
   const { sentinelRef, hasMore, loadMore } = useInfiniteFeed();
@@ -76,6 +79,7 @@ export function FeedSection() {
     selectedType,
     selectedNewsRegion,
     customNewsTopic,
+    selectedSocialPlatform,
   ]);
 
   const reset = () => {
@@ -85,6 +89,7 @@ export function FeedSection() {
     dispatch(setSelectedType("all"));
     dispatch(setSelectedNewsRegion("all"));
     dispatch(setCustomNewsTopic(""));
+    dispatch(setSelectedSocialPlatform("all"));
   };
 
   return (
@@ -282,6 +287,80 @@ export function FeedSection() {
                 />
               </div>
             )}
+          </div>
+        )}
+
+        {/* Dedicated Social Media Platform Filter */}
+        {(selectedType === "all" || selectedType === "social") && (
+          <div className="social-platform-toolbar pt-2 pb-1 border-t border-stone-200/50 dark:border-stone-800/60 flex flex-col gap-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-1.5 text-xs text-stone-500 font-medium">
+                <Share2 size={13} className="text-stone-400" />
+                <span className="font-mono text-[11px] uppercase tracking-wider">Social Platform:</span>
+              </div>
+
+              <div
+                className="filter-row flex items-center gap-1.5 flex-wrap"
+                role="group"
+                aria-label="Social Media Platform Filter"
+              >
+                <button
+                  type="button"
+                  aria-pressed={selectedSocialPlatform === "all"}
+                  className={`text-xs py-1 px-3 rounded-full border transition-all flex items-center gap-1.5 cursor-pointer ${
+                    selectedSocialPlatform === "all"
+                      ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900 border-stone-900 dark:border-white font-semibold shadow-xs"
+                      : "bg-white/60 dark:bg-stone-800/50 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-stone-100"
+                  }`}
+                  onClick={() => dispatch(setSelectedSocialPlatform("all"))}
+                >
+                  <Globe size={12} />
+                  <span>All Feeds</span>
+                </button>
+
+                <button
+                  type="button"
+                  aria-pressed={selectedSocialPlatform === "reddit"}
+                  className={`text-xs py-1 px-3 rounded-full border transition-all flex items-center gap-1.5 cursor-pointer ${
+                    selectedSocialPlatform === "reddit"
+                      ? "bg-orange-600 text-white border-orange-600 font-semibold shadow-xs"
+                      : "bg-white/60 dark:bg-stone-800/50 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-orange-50 dark:hover:bg-orange-950/30"
+                  }`}
+                  onClick={() => dispatch(setSelectedSocialPlatform("reddit"))}
+                >
+                  <span className="w-2 h-2 rounded-full bg-orange-500" />
+                  <span>Reddit (r/threads)</span>
+                </button>
+
+                <button
+                  type="button"
+                  aria-pressed={selectedSocialPlatform === "twitter"}
+                  className={`text-xs py-1 px-3 rounded-full border transition-all flex items-center gap-1.5 cursor-pointer ${
+                    selectedSocialPlatform === "twitter"
+                      ? "bg-sky-600 text-white border-sky-600 font-semibold shadow-xs"
+                      : "bg-white/60 dark:bg-stone-800/50 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-sky-50 dark:hover:bg-sky-950/30"
+                  }`}
+                  onClick={() => dispatch(setSelectedSocialPlatform("twitter"))}
+                >
+                  <span className="font-bold text-[11px]">𝕏</span>
+                  <span>Twitter / X</span>
+                </button>
+
+                <button
+                  type="button"
+                  aria-pressed={selectedSocialPlatform === "mastodon"}
+                  className={`text-xs py-1 px-3 rounded-full border transition-all flex items-center gap-1.5 cursor-pointer ${
+                    selectedSocialPlatform === "mastodon"
+                      ? "bg-purple-600 text-white border-purple-600 font-semibold shadow-xs"
+                      : "bg-white/60 dark:bg-stone-800/50 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-purple-50 dark:hover:bg-purple-950/30"
+                  }`}
+                  onClick={() => dispatch(setSelectedSocialPlatform("mastodon"))}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                  <span>Mastodon</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

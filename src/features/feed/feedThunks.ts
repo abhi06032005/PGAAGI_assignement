@@ -44,6 +44,10 @@ export const fetchFeed = createAsyncThunk(
         queryParams.customTopic = state.search.customNewsTopic.trim();
       }
 
+      if (state.search.selectedSocialPlatform && state.search.selectedSocialPlatform !== 'all') {
+        queryParams.socialPlatform = state.search.selectedSocialPlatform;
+      }
+
       // Calls /api/feed which Next.js rewrites to Express backend
       const response = await apiClient.get<PaginatedResponse<ContentItem> | { data: ContentItem[]; hasMore: boolean; nextPage?: number }>(
         '/api/feed',
